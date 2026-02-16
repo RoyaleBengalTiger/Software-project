@@ -2,12 +2,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { Button } from '@/components/ui/button';
-import { Sun, Moon, Leaf, Menu, X, LogOut, Shield, Briefcase } from 'lucide-react';
+import { Sun, Moon, Leaf, Menu, X, LogOut, Shield, Briefcase, MapPin } from 'lucide-react';
 import { useState } from 'react';
 
 const Navbar = () => {
   const { isAuthenticated, isAdmin, isGovtOfficer, user, logout } = useAuth(); // ✅ add isGovtOfficer
-const { theme, setTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -45,7 +45,14 @@ const { theme, setTheme } = useTheme();
             Forum
           </Link>
 
-
+          <Link
+            to="/map"
+            className="text-foreground/80 hover:text-primary transition-colors flex items-center gap-1"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            <MapPin className="h-4 w-4" />
+            Map
+          </Link>
 
 
           {isAuthenticated && (
@@ -58,15 +65,15 @@ const { theme, setTheme } = useTheme();
             </Link>
           )}
 
-            {isAuthenticated && !isGovtOfficer && (
-              <Link
-                to="/ml/disease"
-                className="text-foreground/80 hover:text-primary transition-colors"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Disease Detection
-              </Link>
-            )}
+          {isAuthenticated && !isGovtOfficer && (
+            <Link
+              to="/ml/disease"
+              className="text-foreground/80 hover:text-primary transition-colors"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Disease Detection
+            </Link>
+          )}
 
 
           {isAdmin && (

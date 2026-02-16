@@ -22,4 +22,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     List<User> findByRoles_Name(String roleName);
 
+    List<User> findByRoles_NameAndLatitudeIsNotNullAndLongitudeIsNotNull(String roleName);
+
 }

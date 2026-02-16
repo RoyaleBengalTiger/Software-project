@@ -38,16 +38,16 @@ public class UserController {
     private final VerificationTokenRepository verificationTokenRepo;
     private final EmailService emailService;
 
-
-
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody SignupRequest signupRequest) {
 
         String username = signupRequest.getUsername() == null ? "" : signupRequest.getUsername().trim();
         String email = signupRequest.getEmail() == null ? "" : signupRequest.getEmail().trim();
 
-        if (username.isBlank()) return ResponseEntity.badRequest().body("Username is required!");
-        if (email.isBlank()) return ResponseEntity.badRequest().body("Email is required!");
+        if (username.isBlank())
+            return ResponseEntity.badRequest().body("Username is required!");
+        if (email.isBlank())
+            return ResponseEntity.badRequest().body("Email is required!");
 
         if (userRepo.existsByUsername(username)) {
             return ResponseEntity.badRequest().body("Username already exists!");
@@ -57,14 +57,16 @@ public class UserController {
         }
 
         String accountType = signupRequest.getAccountType();
-        if (accountType == null || accountType.isBlank()) accountType = "USER";
+        if (accountType == null || accountType.isBlank())
+            accountType = "USER";
 
         Role roleToAssign;
 
         if (accountType.equalsIgnoreCase("GOVT_OFFICER")) {
             String idNo = signupRequest.getIdentificationNumber();
             if (idNo == null || idNo.isBlank()) {
-                return ResponseEntity.badRequest().body("Identification number is required for GOVT officer registration!");
+                return ResponseEntity.badRequest()
+                        .body("Identification number is required for GOVT officer registration!");
             }
             idNo = idNo.trim();
 
@@ -106,18 +108,12 @@ public class UserController {
         emailService.send(
                 savedUser.getEmail(),
                 "Verify your AgriVerse account",
-                "Click this link to verify your email:\n" + verifyLink + "\n\nThis link expires in 24 hours."
-        );
+                "Click this link to verify your email:\n" + verifyLink + "\n\nThis link expires in 24 hours.");
 
         return ResponseEntity.ok(Map.of(
                 "message", "Registration successful. Please verify your email before logging in.",
-                "accountType", accountType
-        ));
+                "accountType", accountType));
     }
-
-
-
-
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody SigninRequest signinRequest) {
@@ -133,6 +129,17 @@ public class UserController {
             return ResponseEntity.badRequest().body("Please verify your email before logging in.");
         }
 
+        // Update user's location if valid coordinates are provided
+        Double lat = signinRequest.getLatitude();
+        Double lng = signinRequest.getLongitude();
+        if (lat != null && lng != null
+                && lat >= -90 && lat <= 90
+                && lng >= -180 && lng <= 180) {
+            _user.setLatitude(lat);
+            _user.setLongitude(lng);
+            userRepo.save(_user);
+        }
+
         String token = jwtUtil.generateToken(_user.getUsername());
 
         return ResponseEntity.ok(Map.of(
@@ -141,10 +148,9 @@ public class UserController {
                         "id", _user.getId(),
                         "username", _user.getUsername(),
                         "email", _user.getEmail(),
-                        "roles", _user.getRoles().stream().map(Role::getName).toList()
-                )
-        ));
+                        "roles", _user.getRoles().stream().map(Role::getName).toList())));
     }
+
     @GetMapping("/verify-email")
     public ResponseEntity<?> verifyEmail(@RequestParam("token") String token) {
 
@@ -163,6 +169,7 @@ public class UserController {
 
         return ResponseEntity.ok("Email verified successfully. You can now log in.");
     }
+
     @PostMapping("/resend-verification")
     public ResponseEntity<?> resendVerification(@RequestBody ResendVerificationRequest req) {
 
@@ -191,11 +198,9 @@ public class UserController {
         emailService.send(
                 user.getEmail(),
                 "Verify your AgriVerse account (new link)",
-                "Here is your new verification link:\n" + verifyLink + "\n\nThis link expires in 24 hours."
-        );
+                "Here is your new verification link:\n" + verifyLink + "\n\nThis link expires in 24 hours.");
 
         return ResponseEntity.ok("Verification email resent. Please check your inbox.");
     }
-
 
 }

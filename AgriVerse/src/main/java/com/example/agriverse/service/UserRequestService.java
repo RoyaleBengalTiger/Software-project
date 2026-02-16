@@ -1,6 +1,5 @@
 package com.example.agriverse.service;
 
-
 import com.example.agriverse.dto.SendUserRequestMessageRequest;
 import com.example.agriverse.dto.UserInfo;
 import com.example.agriverse.dto.UserRequestMessageResponse;
@@ -17,7 +16,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Collectors;
+
 @Service
 @RequiredArgsConstructor
 public class UserRequestService {
@@ -29,7 +31,8 @@ public class UserRequestService {
 
     private User currentUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || auth.getName() == null) throw new RuntimeException("Unauthorized");
+        if (auth == null || auth.getName() == null)
+            throw new RuntimeException("Unauthorized");
         return userRepo.findByUsername(auth.getName())
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }
@@ -56,7 +59,8 @@ public class UserRequestService {
 
     // ✅ NEW: build UserInfo for API response
     private UserInfo toUserInfo(User u, boolean includeIdentificationNumber) {
-        if (u == null) return null;
+        if (u == null)
+            return null;
 
         return new UserInfo(
                 u.getUsername(),
@@ -64,22 +68,19 @@ public class UserRequestService {
                 includeIdentificationNumber ? u.getIdentificationNumber() : null,
                 u.getRoles().stream()
                         .map(Role::getName)
-                        .collect(Collectors.toSet())
-        );
+                        .collect(Collectors.toSet()));
     }
 
-
-    // ✅ Create request with photo + description (status starts OPEN)
+    // ✅ Create request with photos + description (status starts OPEN)
     public UserRequestResponse createRequestWithPhoto(
             String category,
             String description,
             String upazilla,
             String district,
-            MultipartFile image
-    ) {
+            List<MultipartFile> images) {
         User creator = currentUser();
 
-        String imageUrl = fileStorageService.saveImage(image);
+        List<String> imageUrls = fileStorageService.saveImages(images);
 
         // Start OPEN and unassigned (queue based)
         UserRequest saved = requestRepo.save(
@@ -88,12 +89,11 @@ public class UserRequestService {
                         .assignedOfficer(null)
                         .category(category)
                         .description(description)
-                        .imageUrl(imageUrl)
+                        .imageUrls(new ArrayList<>(imageUrls))
                         .upazilla(upazilla)
                         .district(district)
                         .status(RequestStatus.OPEN)
-                        .build()
-        );
+                        .build());
 
         // optional: save the description as first chat message for better UX
         if (description != null && !description.isBlank()) {
@@ -105,6 +105,80 @@ public class UserRequestService {
         }
 
         return toResponse(saved, creator);
+    }
+
+    // ✅ Create request and assign to the nearest Govt Officer by Haversine distance
+    public UserRequestResponse createRequestForNearestOfficer(
+            String category,
+            String description,
+            String upazilla,
+            String district,
+            List<MultipartFile> images) {
+        User creator = currentUser();
+
+        // Validate that the user has a saved location
+        if (creator.getLatitude() == null || creator.getLongitude() == null) {
+            throw new RuntimeException("Your location is not set. Please update your location first.");
+        }
+
+        // Find the nearest officer
+        List<User> officers = userRepo
+                .findByRoles_NameAndLatitudeIsNotNullAndLongitudeIsNotNull("ROLE_GOVT_OFFICER");
+
+        if (officers.isEmpty()) {
+            throw new RuntimeException("No officers with location data available.");
+        }
+
+        User nearest = null;
+        double minDist = Double.MAX_VALUE;
+        for (User officer : officers) {
+            double dist = haversineKm(
+                    creator.getLatitude(), creator.getLongitude(),
+                    officer.getLatitude(), officer.getLongitude());
+            if (dist < minDist) {
+                minDist = dist;
+                nearest = officer;
+            }
+        }
+
+        List<String> imageUrls = fileStorageService.saveImages(images);
+
+        UserRequest saved = requestRepo.save(
+                UserRequest.builder()
+                        .createdBy(creator)
+                        .assignedOfficer(nearest) // pre-assigned to closest officer
+                        .category(category)
+                        .description(description)
+                        .imageUrls(new ArrayList<>(imageUrls))
+                        .upazilla(upazilla)
+                        .district(district)
+                        .status(RequestStatus.OPEN)
+                        .build());
+
+        if (description != null && !description.isBlank()) {
+            messageRepo.save(UserRequestMessage.builder()
+                    .request(saved)
+                    .sender(creator)
+                    .message(description.trim())
+                    .build());
+        }
+
+        return toResponse(saved, creator);
+    }
+
+    /**
+     * Haversine formula — returns distance in kilometres between two lat/lng
+     * points.
+     */
+    private double haversineKm(double lat1, double lon1, double lat2, double lon2) {
+        final double R = 6371.0; // Earth's radius in km
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                        * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
     }
 
     // ✅ Get request by id (for chat UI)
@@ -120,19 +194,17 @@ public class UserRequestService {
     public Page<UserRequestResponse> myRequests(int page, int size) {
         User creator = currentUser();
         return requestRepo.findByCreatedByUsername(
-                        creator.getUsername(),
-                        PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"))
-                )
+                creator.getUsername(),
+                PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")))
                 .map(r -> toResponse(r, creator));
     }
 
     public Page<UserRequestResponse> myArchived(int page, int size) {
         User creator = currentUser();
         return requestRepo.findByCreatedByUsernameAndStatus(
-                        creator.getUsername(),
-                        RequestStatus.ARCHIVED,
-                        PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "archivedAt"))
-                )
+                creator.getUsername(),
+                RequestStatus.ARCHIVED,
+                PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "archivedAt")))
                 .map(r -> toResponse(r, creator));
     }
 
@@ -144,9 +216,8 @@ public class UserRequestService {
         }
 
         return requestRepo.findByStatusAndAssignedOfficerIsNull(
-                        RequestStatus.OPEN,
-                        PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"))
-                )
+                RequestStatus.OPEN,
+                PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")))
                 .map(r -> toResponse(r, officer));
     }
 
@@ -158,10 +229,9 @@ public class UserRequestService {
         }
 
         return requestRepo.findByAssignedOfficerUsernameAndStatusNot(
-                        officer.getUsername(),
-                        RequestStatus.ARCHIVED,
-                        PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "takenAt"))
-                )
+                officer.getUsername(),
+                RequestStatus.ARCHIVED,
+                PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "takenAt")))
                 .map(r -> toResponse(r, officer));
     }
 
@@ -172,10 +242,9 @@ public class UserRequestService {
         }
 
         return requestRepo.findByAssignedOfficerUsernameAndStatus(
-                        officer.getUsername(),
-                        RequestStatus.ARCHIVED,
-                        PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "archivedAt"))
-                )
+                officer.getUsername(),
+                RequestStatus.ARCHIVED,
+                PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "archivedAt")))
                 .map(r -> toResponse(r, officer));
     }
 
@@ -201,7 +270,8 @@ public class UserRequestService {
             throw new RuntimeException("Request is not open");
         }
 
-        // If already assigned (forwarded to a specific officer), only that officer can take it.
+        // If already assigned (forwarded to a specific officer), only that officer can
+        // take it.
         if (req.getAssignedOfficer() != null
                 && !req.getAssignedOfficer().getUsername().equals(officer.getUsername())
                 && !hasRole(officer, "ROLE_ADMIN")) {
@@ -215,7 +285,8 @@ public class UserRequestService {
         return toResponse(requestRepo.save(req), officer);
     }
 
-    // ✅ Forward: IN_PROGRESS -> OPEN, assignedOfficer = target officer, takenAt cleared
+    // ✅ Forward: IN_PROGRESS -> OPEN, assignedOfficer = target officer, takenAt
+    // cleared
     public UserRequestResponse forwardRequest(Long requestId, String toOfficerUsername) {
         User actor = currentUser();
 
@@ -276,9 +347,8 @@ public class UserRequestService {
         ensureParticipant(u, req);
 
         return messageRepo.findByRequestIdOrderByCreatedAtAsc(
-                        requestId,
-                        PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "createdAt"))
-                )
+                requestId,
+                PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "createdAt")))
                 .map(m -> UserRequestMessageResponse.builder()
                         .id(m.getId())
                         .requestId(requestId)
@@ -331,8 +401,7 @@ public class UserRequestService {
                         .request(req)
                         .sender(sender)
                         .message(body.getMessage().trim())
-                        .build()
-        );
+                        .build());
 
         return UserRequestMessageResponse.builder()
                 .id(saved.getId())
@@ -351,9 +420,11 @@ public class UserRequestService {
                 .orElseThrow(() -> new RuntimeException("Request not found"));
 
         boolean canArchive = hasRole(actor, "ROLE_ADMIN")
-                || (req.getAssignedOfficer() != null && req.getAssignedOfficer().getUsername().equals(actor.getUsername()));
+                || (req.getAssignedOfficer() != null
+                        && req.getAssignedOfficer().getUsername().equals(actor.getUsername()));
 
-        if (!canArchive) throw new RuntimeException("Forbidden");
+        if (!canArchive)
+            throw new RuntimeException("Forbidden");
 
         req.setStatus(RequestStatus.ARCHIVED);
         req.setArchivedAt(Instant.now());
@@ -386,18 +457,16 @@ public class UserRequestService {
                 .assignedOfficerIdentificationNumber(officerIdNo)
                 .category(r.getCategory())
                 .description(r.getDescription())
-                .imageUrl(r.getImageUrl())
+                .imageUrls(r.getImageUrls())
+                .imageUrl(r.getImageUrl()) // backward compat: first image
                 .state(r.getUpazilla())
                 .district(r.getDistrict())
                 .status(r.getStatus())
                 .createdAt(r.getCreatedAt())
                 .takenAt(r.getTakenAt())
                 .archivedAt(r.getArchivedAt())
-
-                // ✅ NEW fields
                 .createdBy(createdByInfo)
                 .assignedOfficer(officerInfo)
-
                 .build();
     }
 }

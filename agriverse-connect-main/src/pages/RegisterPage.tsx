@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { Leaf, Loader2, Mail, Lock, User, BadgeCheck } from "lucide-react";
+import { Leaf, Loader2, Mail, Lock, User, BadgeCheck, Briefcase } from "lucide-react";
 import { AxiosError } from "axios";
 
 const registerSchema = z
@@ -18,8 +18,6 @@ const registerSchema = z
     email: z.string().trim().email("Please enter a valid email address"),
     password: z.string().min(6, "Password must be at least 6 characters"),
     confirmPassword: z.string().min(6, "Please confirm your password"),
-
-    // NEW
     accountType: z.enum(["USER", "GOVT_OFFICER"]).default("USER"),
     identificationNumber: z.string().trim().optional(),
   })
@@ -60,7 +58,6 @@ const RegisterPage = () => {
 
   const accountType = form.watch("accountType");
 
-  // Optional: clear ID when switching back to USER
   useEffect(() => {
     if (accountType !== "GOVT_OFFICER") {
       form.setValue("identificationNumber", "");
@@ -75,38 +72,24 @@ const RegisterPage = () => {
         username: data.username.trim(),
         email: data.email.trim(),
         password: data.password,
-
-        // NEW
         accountType: data.accountType,
         ...(data.accountType === "GOVT_OFFICER"
           ? { identificationNumber: data.identificationNumber?.trim() }
           : {}),
       });
-
-      toast({
-        title: "Account Created!",
-        description: "Please verify your email before logging in.",
-      });
-
+      toast({ title: "Account Created!", description: "Please verify your email before logging in." });
       navigate(`/check-email?email=${encodeURIComponent(data.email.trim())}`, { replace: true });
     } catch (error) {
       const axiosError = error as AxiosError<{ message?: string }>;
       let message = "Registration failed. Please try again.";
-
       const raw = axiosError.response?.data as any;
       const serverMsg = raw?.message || (typeof raw === "string" ? raw : undefined);
-
       if (axiosError.response?.status === 409 || serverMsg?.includes("exists")) {
         message = "An account with this email or username already exists.";
       } else if (serverMsg) {
         message = serverMsg;
       }
-
-      toast({
-        title: "Registration Failed",
-        description: message,
-        variant: "destructive",
-      });
+      toast({ title: "Registration Failed", description: message, variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -116,7 +99,7 @@ const RegisterPage = () => {
     <div className="min-h-[calc(100vh-8rem)] flex items-center justify-center py-12 px-4">
       <Card className="w-full max-w-md border-border/50 animate-fade-in">
         <CardHeader className="text-center">
-          <div className="mx-auto h-12 w-12 rounded-lg bg-primary flex items-center justify-center mb-4">
+          <div className="mx-auto h-12 w-12 rounded-xl bg-primary flex items-center justify-center mb-4">
             <Leaf className="h-7 w-7 text-primary-foreground" />
           </div>
           <CardTitle className="text-2xl font-bold">Create Account</CardTitle>
@@ -126,7 +109,7 @@ const RegisterPage = () => {
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              {/* NEW: Account type */}
+              {/* ═══ Account Type Toggle ═══ */}
               <FormField
                 control={form.control}
                 name="accountType"
@@ -134,14 +117,30 @@ const RegisterPage = () => {
                   <FormItem>
                     <FormLabel>Account Type</FormLabel>
                     <FormControl>
-                      <select
-                        className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
-                        value={field.value}
-                        onChange={field.onChange}
-                      >
-                        <option value="USER">Normal User</option>
-                        <option value="GOVT_OFFICER">Govt Officer</option>
-                      </select>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => field.onChange("USER")}
+                          className={`flex items-center justify-center gap-2 rounded-lg border-2 px-3 py-2.5 text-sm font-medium transition-all ${field.value === "USER"
+                              ? "border-primary bg-primary/10 text-primary"
+                              : "border-border hover:border-muted-foreground/30 text-muted-foreground"
+                            }`}
+                        >
+                          <User className="h-4 w-4" />
+                          Farmer / User
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => field.onChange("GOVT_OFFICER")}
+                          className={`flex items-center justify-center gap-2 rounded-lg border-2 px-3 py-2.5 text-sm font-medium transition-all ${field.value === "GOVT_OFFICER"
+                              ? "border-primary bg-primary/10 text-primary"
+                              : "border-border hover:border-muted-foreground/30 text-muted-foreground"
+                            }`}
+                        >
+                          <Briefcase className="h-4 w-4" />
+                          Govt Officer
+                        </button>
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -184,13 +183,13 @@ const RegisterPage = () => {
                 )}
               />
 
-              {/* NEW: Identification number */}
+              {/* ID Number (only for Govt Officer) */}
               {accountType === "GOVT_OFFICER" && (
                 <FormField
                   control={form.control}
                   name="identificationNumber"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="animate-fade-in">
                       <FormLabel>Identification Number</FormLabel>
                       <FormControl>
                         <div className="relative">
@@ -222,7 +221,7 @@ const RegisterPage = () => {
                 )}
               />
 
-              {/* Confirm Password */}
+              {/* Confirm */}
               <FormField
                 control={form.control}
                 name="confirmPassword"
@@ -248,9 +247,7 @@ const RegisterPage = () => {
 
           <div className="mt-6 text-center text-sm text-muted-foreground">
             Already have an account?{" "}
-            <Link to="/login" className="text-primary hover:underline font-medium">
-              Sign in
-            </Link>
+            <Link to="/login" className="text-primary hover:underline font-medium">Sign in</Link>
           </div>
         </CardContent>
       </Card>

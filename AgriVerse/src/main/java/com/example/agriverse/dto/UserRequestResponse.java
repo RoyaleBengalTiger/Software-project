@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Getter;
 
 import java.time.Instant;
+import java.util.List;
 
 @Getter
 @Builder
@@ -15,6 +16,10 @@ public class UserRequestResponse {
 
     private String category;
     private String description;
+
+    // ✅ Multi-image: full list
+    private List<String> imageUrls;
+    // ✅ Backward compat: first image
     private String imageUrl;
 
     private String state;
@@ -29,7 +34,7 @@ public class UserRequestResponse {
     private String assignedOfficerUsername;
     private String assignedOfficerIdentificationNumber;
 
-    // ✅ NEW: structured user details for chat UI
+    // Structured user details for chat UI
     private UserInfo createdBy;
     private UserInfo assignedOfficer;
 }

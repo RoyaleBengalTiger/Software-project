@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { requestsApi, UserRequest, UserRequestMessage } from "@/api/requests";
 import { useAuth } from "@/context/AuthContext";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -32,7 +32,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 
-import { Info, PanelLeftClose, PanelLeftOpen } from "lucide-react"; // ✅ NEW
+import { Info, PanelLeftClose, PanelLeftOpen, MapPin } from "lucide-react"; // ✅ NEW
 
 type OfficerOption = {
   username: string;
@@ -57,13 +57,12 @@ function formatTime(iso?: string) {
 function StatusPill({ status }: { status?: string | null }) {
   return (
     <span
-      className={`text-xs rounded-full px-2 py-1 border ${
-        status === "OPEN"
-          ? "bg-muted/30"
-          : status === "IN_PROGRESS"
+      className={`text-xs rounded-full px-2 py-1 border ${status === "OPEN"
+        ? "bg-muted/30"
+        : status === "IN_PROGRESS"
           ? "bg-primary/10"
           : "bg-muted/50"
-      }`}
+        }`}
     >
       {status ?? "—"}
     </span>
@@ -91,6 +90,7 @@ function RequestInfoPanel({
   descExpanded: boolean;
   setDescExpanded: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
+  const navigate = useNavigate();
   const status = req?.status;
   const imageSrc = buildFileUrl(req?.imageUrl);
 
@@ -156,13 +156,25 @@ function RequestInfoPanel({
       </div>
 
       {/* Assigned */}
-      <div className="rounded-xl border border-border/50 p-3">
+      <div className="rounded-xl border border-border/50 p-3 relative group">
         <div className="text-xs text-muted-foreground">Assigned officer</div>
         <div className="font-medium">{assignedName || "Not assigned"}</div>
         {req?.assignedOfficer?.identificationNumber && (
           <div className="text-sm text-muted-foreground">
             ID: {req.assignedOfficer.identificationNumber}
           </div>
+        )}
+        {assignedName && assignedName !== "Not assigned" && assignedName !== "Unknown" && (
+          <Button
+            variant="secondary"
+            size="sm"
+            className="absolute top-3 right-3 h-7 text-xs gap-1"
+            onClick={() => navigate(`/map?username=${encodeURIComponent(assignedName)}`)}
+            title="Locate officer on map"
+          >
+            <MapPin className="h-3 w-3" />
+            Map
+          </Button>
         )}
       </div>
 
@@ -226,20 +238,40 @@ function RequestInfoPanel({
         )}
       </div>
 
-      {/* Image */}
-      {imageSrc && (
-        <div className="rounded-xl border border-border/50 p-3 space-y-2">
-          <div className="text-xs text-muted-foreground">Attachment</div>
-          <a href={imageSrc} target="_blank" rel="noreferrer">
-            <img
-              src={imageSrc}
-              alt="Request attachment"
-              className="w-full max-h-[260px] object-contain rounded-lg border border-border/50 bg-muted/20"
-            />
-          </a>
-          <div className="text-xs text-muted-foreground">Click to open</div>
-        </div>
-      )}
+      {/* Images (Gallery) */}
+      {(() => {
+        const urls = req?.imageUrls?.length
+          ? req.imageUrls
+          : req?.imageUrl
+            ? [req.imageUrl]
+            : [];
+
+        if (urls.length === 0) return null;
+
+        return (
+          <div className="space-y-2">
+            <div className="text-xs text-muted-foreground">Attachments ({urls.length})</div>
+            <div className={`grid gap-2 ${urls.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
+              {urls.map((url, i) => (
+                <a
+                  key={i}
+                  href={buildFileUrl(url)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="block relative rounded-lg border border-border/50 bg-muted/20 overflow-hidden hover:opacity-90 transition-opacity"
+                >
+                  <img
+                    src={buildFileUrl(url)}
+                    alt={`Attachment ${i + 1}`}
+                    className="w-full h-24 object-cover"
+                  />
+                </a>
+              ))}
+            </div>
+            <div className="text-[10px] text-muted-foreground">Click to view full size</div>
+          </div>
+        );
+      })()}
 
       {isGovtOfficer && status === "OPEN" && userUsername && (
         <div className="text-xs text-muted-foreground">
@@ -293,7 +325,7 @@ export default function RequestChatPage() {
       }
     })();
 
-    const t = window.setInterval(() => load().catch(() => {}), 4000);
+    const t = window.setInterval(() => load().catch(() => { }), 4000);
     return () => window.clearInterval(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [requestId]);
@@ -402,8 +434,8 @@ export default function RequestChatPage() {
                   {isArchived
                     ? "Chat archived"
                     : officerMustTake
-                    ? "Take the request to reply"
-                    : "Live"}
+                      ? "Take the request to reply"
+                      : "Live"}
                 </div>
 
                 {/* ✅ NEW: Desktop collapse toggle (only lg+) */}
@@ -461,8 +493,8 @@ export default function RequestChatPage() {
               {isArchived
                 ? "Chat archived"
                 : officerMustTake
-                ? "Take the request to reply"
-                : "Live"}{" "}
+                  ? "Take the request to reply"
+                  : "Live"}{" "}
               <span className="mx-1">•</span> <StatusPill status={status as any} />
             </div>
           </CardHeader>
@@ -485,17 +517,15 @@ export default function RequestChatPage() {
                     >
                       <div className="max-w-[88%] sm:max-w-[70%] space-y-1">
                         <div
-                          className={`rounded-2xl px-4 py-2 text-sm border border-border/50 ${
-                            mine ? "bg-primary text-primary-foreground" : "bg-muted/30"
-                          }`}
+                          className={`rounded-2xl px-4 py-2 text-sm border border-border/50 ${mine ? "bg-primary text-primary-foreground" : "bg-muted/30"
+                            }`}
                         >
                           <div className="whitespace-pre-wrap">{m.message}</div>
                         </div>
 
                         <div
-                          className={`text-[11px] text-muted-foreground ${
-                            mine ? "text-right" : "text-left"
-                          }`}
+                          className={`text-[11px] text-muted-foreground ${mine ? "text-right" : "text-left"
+                            }`}
                         >
                           {m.senderUsername}
                           {m.createdAt ? ` • ${formatTime(m.createdAt)}` : ""}
@@ -521,8 +551,8 @@ export default function RequestChatPage() {
                   isArchived
                     ? "Chat archived"
                     : officerMustTake
-                    ? "Take the request to reply"
-                    : "Write a message..."
+                      ? "Take the request to reply"
+                      : "Write a message..."
                 }
                 disabled={isArchived || officerMustTake}
                 className="min-h-[44px] max-h-[160px]"

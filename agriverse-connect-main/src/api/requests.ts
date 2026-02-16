@@ -1,3 +1,4 @@
+// src/api/requests.ts
 import apiClient from "@/api/client";
 
 export type RequestStatus = "OPEN" | "IN_PROGRESS" | "ARCHIVED";
@@ -19,7 +20,8 @@ export type UserRequest = {
 
   category: string;
   description: string;
-  imageUrl?: string | null;
+  imageUrls?: string[]; // ✅ NEW for multi-image
+  imageUrl?: string | null; // Keep for backward compatibility
   state?: string | null;
   district?: string | null;
 
@@ -52,14 +54,18 @@ export const requestsApi = {
     description: string;
     state?: string;
     district?: string;
-    image?: File | null;
+    image?: File[] | null; // ✅ NEW: accept array
   }): Promise<UserRequest> => {
     const fd = new FormData();
     fd.append("category", data.category);
     fd.append("description", data.description);
     if (data.state) fd.append("state", data.state);
     if (data.district) fd.append("district", data.district);
-    if (data.image) fd.append("image", data.image);
+
+    // Append each file as "image"
+    if (data.image && data.image.length > 0) {
+      data.image.forEach((file) => fd.append("image", file));
+    }
 
     const res = await apiClient.post<UserRequest>("/api/requests", fd, {
       headers: { "Content-Type": "multipart/form-data" },

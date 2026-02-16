@@ -13,7 +13,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     "/profile",
     "/forum",
     "/requests",
-    "/disease-detection",
+    "/ml/disease",
+    "/map",
     "/requests/", // safety for nested
   ];
 

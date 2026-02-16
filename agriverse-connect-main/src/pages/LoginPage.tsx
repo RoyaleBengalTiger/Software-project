@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,6 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useToast } from "@/hooks/use-toast";
 import { Leaf, Loader2, Mail, Lock } from "lucide-react";
 import { AxiosError } from "axios";
+import { getGeolocationOnce } from "@/hooks/use-geolocation";
 
 const loginSchema = z.object({
   email: z.string().trim().email("Please enter a valid email address"),
@@ -28,6 +29,14 @@ const LoginPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [needsVerify, setNeedsVerify] = useState(false);
   const [lastEmail, setLastEmail] = useState("");
+
+  // Attempt geolocation on mount (non-blocking)
+  const geoRef = useRef<{ latitude: number; longitude: number } | null>(null);
+  useEffect(() => {
+    getGeolocationOnce(4000).then((coords) => {
+      geoRef.current = coords;
+    });
+  }, []);
 
   const from = useMemo(() => {
     const state = location.state as { from?: { pathname?: string } } | null;
@@ -47,7 +56,18 @@ const LoginPage = () => {
     setNeedsVerify(false);
 
     try {
-      await login({ email: data.email.trim(), password: data.password });
+      const loginPayload: Parameters<typeof login>[0] = {
+        email: data.email.trim(),
+        password: data.password,
+      };
+
+      // Include geolocation if available
+      if (geoRef.current) {
+        loginPayload.latitude = geoRef.current.latitude;
+        loginPayload.longitude = geoRef.current.longitude;
+      }
+
+      await login(loginPayload);
       toast({
         title: "Welcome back!",
         description: "You have successfully logged in.",

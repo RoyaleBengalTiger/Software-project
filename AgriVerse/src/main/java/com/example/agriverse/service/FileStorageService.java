@@ -5,6 +5,8 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.nio.file.*;
 import java.util.UUID;
 
@@ -14,22 +16,26 @@ public class FileStorageService {
     private final Path uploadRoot = Paths.get("uploads");
 
     public String saveImage(MultipartFile file) {
-        if (file == null || file.isEmpty()) return null;
+        if (file == null || file.isEmpty())
+            return null;
 
         try {
             Files.createDirectories(uploadRoot);
 
-            String original = StringUtils.cleanPath(file.getOriginalFilename() == null ? "image" : file.getOriginalFilename());
+            String original = StringUtils
+                    .cleanPath(file.getOriginalFilename() == null ? "image" : file.getOriginalFilename());
             String ext = "";
 
             int dot = original.lastIndexOf('.');
-            if (dot >= 0) ext = original.substring(dot);
+            if (dot >= 0)
+                ext = original.substring(dot);
 
             String filename = UUID.randomUUID() + ext;
             Path target = uploadRoot.resolve(filename).normalize();
 
             // basic safety: prevent path traversal
-            if (!target.startsWith(uploadRoot)) throw new RuntimeException("Invalid file path");
+            if (!target.startsWith(uploadRoot))
+                throw new RuntimeException("Invalid file path");
 
             Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
 
@@ -43,5 +49,20 @@ public class FileStorageService {
 
     public Path getFilePath(String filename) {
         return uploadRoot.resolve(filename).normalize();
+    }
+
+    /**
+     * Save multiple images and return their URLs.
+     */
+    public List<String> saveImages(List<MultipartFile> files) {
+        if (files == null || files.isEmpty())
+            return List.of();
+        List<String> urls = new ArrayList<>();
+        for (MultipartFile f : files) {
+            String url = saveImage(f);
+            if (url != null)
+                urls.add(url);
+        }
+        return urls;
     }
 }

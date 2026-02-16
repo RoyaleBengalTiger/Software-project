@@ -4,6 +4,9 @@ import { forumApi, Comment, Post } from "@/api/forum";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Separator } from "@/components/ui/separator";
+import { ChevronRight, ArrowLeft, MessageSquare, Clock, Send, Loader2, User } from "lucide-react";
 
 export default function ForumPostPage() {
   const { postId } = useParams();
@@ -13,7 +16,6 @@ export default function ForumPostPage() {
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
-
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
 
@@ -59,185 +61,138 @@ export default function ForumPostPage() {
 
   if (loading) {
     return (
-      <div className="min-h-[calc(100vh-0px)] bg-background">
-        <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:py-10">
-          <div className="text-sm text-muted-foreground">Loading…</div>
+      <div className="min-h-screen bg-background">
+        <div className="mx-auto w-full max-w-4xl px-4 py-8 space-y-6">
+          <Skeleton className="h-5 w-40" />
+          <Skeleton className="h-8 w-2/3" />
+          <Skeleton className="h-4 w-1/3" />
+          <Card className="border-border/50">
+            <CardContent className="p-6 space-y-3">
+              <Skeleton className="h-5 w-full" />
+              <Skeleton className="h-5 w-full" />
+              <Skeleton className="h-5 w-2/3" />
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-[calc(100vh-0px)] bg-background">
-      <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:py-10">
-        {err && <div className="mb-4 text-sm text-destructive">{err}</div>}
+    <div className="min-h-screen bg-background">
+      <div className="mx-auto w-full max-w-4xl px-4 py-8 space-y-6">
+        {err && <div className="text-sm text-destructive rounded-lg bg-destructive/10 border border-destructive/20 p-3">{err}</div>}
 
         {post && (
           <>
-            {/* Breadcrumb + actions */}
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-              <div className="space-y-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Link
-                    to="/forum"
-                    className="text-sm text-muted-foreground hover:text-foreground"
-                  >
-                    Forum
-                  </Link>
-                  <span className="text-sm text-muted-foreground">/</span>
-                  <Link
-                    to={`/forum/topics/${post.topicId}`}
-                    className="text-sm text-muted-foreground hover:text-foreground capitalize"
-                  >
-                    {post.topicName}
-                  </Link>
-                </div>
+            {/* ═══ Breadcrumb ═══ */}
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Link to="/forum" className="hover:text-foreground transition-colors">Forum</Link>
+              <ChevronRight className="h-3 w-3" />
+              <Link to={`/forum/topics/${post.topicId}`} className="hover:text-foreground transition-colors capitalize">{post.topicName}</Link>
+              <ChevronRight className="h-3 w-3" />
+              <span className="text-foreground font-medium truncate max-w-[200px]">{post.title}</span>
+            </div>
 
-                <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">
-                  {post.title}
-                </h1>
-
-                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
-                  <span>
-                    By{" "}
-                    <span className="font-medium text-foreground">
-                      {post.authorUsername}
-                    </span>
+            {/* ═══ Post Header ═══ */}
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{post.title}</h1>
+                <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-muted-foreground">
+                  <span className="flex items-center gap-1.5">
+                    <User className="h-3.5 w-3.5" />
+                    <span className="font-medium text-foreground">{post.authorUsername}</span>
                   </span>
-                  <span className="hidden sm:inline">•</span>
-                  <span>{new Date(post.createdAt).toLocaleString()}</span>
-                  <span className="hidden sm:inline">•</span>
-                  <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs">
-                    {comments.length} comments
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-3.5 w-3.5" />
+                    {new Date(post.createdAt).toLocaleString()}
+                  </span>
+                  <span className="flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs">
+                    <MessageSquare className="h-3 w-3" /> {comments.length}
                   </span>
                 </div>
               </div>
-
-              <Button asChild variant="outline" className="w-full sm:w-auto">
-                <Link to={`/forum/topics/${post.topicId}`}>Back</Link>
+              <Button variant="outline" size="sm" className="gap-2 shrink-0" asChild>
+                <Link to={`/forum/topics/${post.topicId}`}><ArrowLeft className="h-4 w-4" /> Back</Link>
               </Button>
             </div>
 
-            {/* ✅ MAIN POST (distinct styling) */}
-            <Card className="mt-6 overflow-hidden rounded-2xl border">
-              {/* header strip */}
-              <div className="border-b bg-muted/35 px-5 py-4 sm:px-6">
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
-                      Post
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      Original question / details
-                    </span>
+            {/* ═══ Post Body ═══ */}
+            <Card className="border-border/50 overflow-hidden">
+              <div className="border-b border-border/50 bg-muted/20 px-5 py-3">
+                <div className="flex items-center gap-3">
+                  <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">
+                    {post.authorUsername?.slice(0, 2).toUpperCase()}
                   </div>
-
-                  <div className="text-xs text-muted-foreground">
-                    Posted {new Date(post.createdAt).toLocaleString()}
+                  <div>
+                    <div className="text-sm font-semibold">{post.authorUsername}</div>
+                    <div className="text-xs text-muted-foreground">Author • {new Date(post.createdAt).toLocaleString()}</div>
                   </div>
-                </div>
-
-                {/* stronger “author block” */}
-                <div className="mt-3 flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-3">
-                    {/* simple avatar circle (no extra component needed) */}
-                    <div className="grid h-9 w-9 place-items-center rounded-full bg-foreground/10 text-xs font-semibold">
-                      {post.authorUsername?.slice(0, 2).toUpperCase()}
-                    </div>
-                    <div className="leading-tight">
-                      <div className="text-sm font-semibold">{post.authorUsername}</div>
-                      <div className="text-xs text-muted-foreground">Author</div>
-                    </div>
-                  </div>
-
-                  <span className="hidden sm:inline-flex rounded-full border px-2 py-1 text-xs text-muted-foreground">
-                    #{post.id}
-                  </span>
                 </div>
               </div>
-
-              <CardContent className="px-5 py-5 sm:px-6 sm:py-6">
-                <div className="whitespace-pre-wrap text-sm sm:text-base leading-relaxed">
-                  {post.content}
-                </div>
+              <CardContent className="p-5 sm:p-6">
+                <div className="whitespace-pre-wrap text-sm sm:text-base leading-relaxed">{post.content}</div>
               </CardContent>
             </Card>
 
-            {/* Reply box */}
-            <Card className="mt-6 rounded-2xl">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base sm:text-lg">Write a reply</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
+            {/* ═══ Reply Box ═══ */}
+            <Card className="border-border/50">
+              <CardContent className="p-5 space-y-3">
                 <Textarea
                   value={text}
                   onChange={(e) => setText(e.target.value)}
-                  placeholder="Write your comment…"
-                  className="min-h-[120px]"
+                  placeholder="Write your reply…"
+                  className="min-h-[100px] resize-none"
                 />
-                <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
-                  <Button
-                    variant="secondary"
-                    onClick={() => setText("")}
-                    disabled={sending || text.length === 0}
-                    className="w-full sm:w-auto"
-                  >
-                    Clear
-                  </Button>
-                  <Button onClick={onComment} disabled={!canSend} className="w-full sm:w-auto">
-                    {sending ? "Sending…" : "Comment"}
-                  </Button>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">{text.length} characters</span>
+                  <div className="flex gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => setText("")} disabled={sending || !text}>Clear</Button>
+                    <Button size="sm" onClick={onComment} disabled={!canSend} className="gap-2">
+                      {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                      {sending ? "Sending…" : "Reply"}
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* ✅ COMMENTS (more compact + visually “secondary”) */}
-            <div className="mt-8">
-              <div className="mb-3 flex items-center justify-between">
-                <h2 className="text-base sm:text-lg font-semibold">
-                  Comments <span className="text-muted-foreground">({comments.length})</span>
-                </h2>
-              </div>
+            {/* ═══ Comments ═══ */}
+            <div>
+              <Separator className="mb-6" />
+              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <MessageSquare className="h-5 w-5 text-primary" />
+                {comments.length} {comments.length === 1 ? "Reply" : "Replies"}
+              </h2>
 
               <div className="space-y-3">
                 {comments.map((c) => (
-                  <Card
-                    key={c.id}
-                    className="rounded-2xl border bg-card/60"
-                  >
-                    <CardContent className="p-4 sm:p-5">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-center gap-3">
-                          <div className="grid h-8 w-8 place-items-center rounded-full bg-foreground/10 text-[10px] font-semibold">
-                            {c.authorUsername?.slice(0, 2).toUpperCase()}
-                          </div>
-                          <div className="leading-tight">
-                            <div className="text-sm font-medium">{c.authorUsername}</div>
-                            <div className="text-xs text-muted-foreground">
-                              {new Date(c.createdAt).toLocaleString()}
-                            </div>
-                          </div>
+                  <Card key={c.id} className="border-border/50 bg-card/60">
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3">
+                        <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-[10px] font-bold shrink-0">
+                          {c.authorUsername?.slice(0, 2).toUpperCase()}
                         </div>
-
-                        <span className="rounded-full border px-2 py-0.5 text-[11px] text-muted-foreground">
-                          Comment
-                        </span>
-                      </div>
-
-                      <div className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">
-                        {c.content}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-sm font-medium">{c.authorUsername}</span>
+                            <span className="text-xs text-muted-foreground">{new Date(c.createdAt).toLocaleString()}</span>
+                          </div>
+                          <div className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">{c.content}</div>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
                 ))}
 
                 {comments.length === 0 && (
-                  <div className="rounded-2xl border bg-card/40 p-8 text-center">
-                    <p className="text-base font-medium">No comments yet</p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Be the first to reply and help the community.
-                    </p>
-                  </div>
+                  <Card className="border-border/50 border-dashed">
+                    <CardContent className="py-10 text-center">
+                      <MessageSquare className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
+                      <p className="font-medium text-sm">No replies yet</p>
+                      <p className="text-xs text-muted-foreground mt-1">Be the first to contribute!</p>
+                    </CardContent>
+                  </Card>
                 )}
               </div>
             </div>

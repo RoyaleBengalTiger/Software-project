@@ -15,6 +15,8 @@ export interface AuthResponse {
 export interface LoginRequest {
   email: string;
   password: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 export type AccountType = "USER" | "GOVT_OFFICER";
@@ -32,8 +34,8 @@ export interface RegisterRequest {
 export type RegisterResponse =
   | string
   | {
-      message?: string;
-    };
+    message?: string;
+  };
 
 export type VerifyEmailResponse = string;
 

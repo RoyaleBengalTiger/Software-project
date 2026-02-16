@@ -19,6 +19,7 @@ import AdminPage from "@/pages/AdminPage";
 import UnauthorizedPage from "@/pages/UnauthorizedPage";
 import NotFoundPage from "@/pages/NotFoundPage";
 import GovtOfficerDashboardPage from "@/pages/GovtOfficerDashboardPage";
+import MapPage from "@/pages/MapPage";
 import CreateRequestPage from "@/pages/requests/CreateRequestPage";
 import RequestChatPage from "@/pages/requests/RequestChatPage";
 import RequestsPage from "@/pages/requests/RequestsPage";
@@ -79,6 +80,16 @@ const App = () => (
                   }
                 />
 
+                {/* Map */}
+                <Route
+                  path="/map"
+                  element={
+                    <ProtectedRoute>
+                      <MapPage />
+                    </ProtectedRoute>
+                  }
+                />
+
                 {/* Forum (Protected) */}
                 <Route
                   path="/forum"
@@ -123,41 +134,41 @@ const App = () => (
                   }
                 />
                 <Route
-                path="/gov/dashboard"
-                element={
-                  <ProtectedRoute requireGovtOfficer>
-                    <GovtOfficerDashboardPage />
-                  </ProtectedRoute>
-                }
-              />
+                  path="/gov/dashboard"
+                  element={
+                    <ProtectedRoute requireGovtOfficer>
+                      <GovtOfficerDashboardPage />
+                    </ProtectedRoute>
+                  }
+                />
 
-              <Route
-                path="/requests/new"
-                element={
-                  <ProtectedRoute>
-                    <CreateRequestPage />
-                  </ProtectedRoute>
-                }
-              />
+                <Route
+                  path="/requests/new"
+                  element={
+                    <ProtectedRoute>
+                      <CreateRequestPage />
+                    </ProtectedRoute>
+                  }
+                />
 
-              <Route
-                path="/requests/:id"
-                element={
-                  <ProtectedRoute>
-                    <RequestChatPage />
-                  </ProtectedRoute>
-                }
-              />
+                <Route
+                  path="/requests/:id"
+                  element={
+                    <ProtectedRoute>
+                      <RequestChatPage />
+                    </ProtectedRoute>
+                  }
+                />
 
-              <Route
-                path="/requests"
-                element={
-                  <ProtectedRoute>
-                    <RequestsPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route path="/ml/disease" element={<DiseaseDetectionPage />} />
+                <Route
+                  path="/requests"
+                  element={
+                    <ProtectedRoute>
+                      <RequestsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route path="/ml/disease" element={<DiseaseDetectionPage />} />
 
 
                 {/* Catch-all */}
