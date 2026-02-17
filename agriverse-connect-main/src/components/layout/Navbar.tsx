@@ -30,14 +30,6 @@ const Navbar = () => {
           </Link>
 
           <Link
-            to="/profile"
-            className="text-foreground/80 hover:text-primary transition-colors"
-            onClick={() => setMobileMenuOpen(false)}
-          >
-            Profile
-          </Link>
-
-          <Link
             to="/forum"
             className="text-foreground/80 hover:text-primary transition-colors"
             onClick={() => setMobileMenuOpen(false)}
@@ -95,9 +87,12 @@ const Navbar = () => {
     <>
       {isAuthenticated ? (
         <div className="flex items-center gap-3">
-          <span className="text-sm text-muted-foreground hidden sm:inline">
+          <Link
+            to="/profile"
+            className="text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer hidden sm:inline"
+          >
             {user?.username}
-          </span>
+          </Link>
           <Button variant="outline" size="sm" onClick={handleLogout}>
             <LogOut className="h-4 w-4 mr-1" />
             Logout

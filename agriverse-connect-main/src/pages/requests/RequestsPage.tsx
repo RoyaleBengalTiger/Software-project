@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import BackButton from "@/components/BackButton";
 import { useNavigate } from "react-router-dom";
 import { requestsApi, UserRequest } from "@/api/requests";
 import { useAuth } from "@/context/AuthContext";
@@ -272,6 +273,7 @@ export default function RequestsPage() {
       <div className="sticky top-0 z-20 -mx-3 sm:-mx-4 px-3 sm:px-4 py-3 bg-background/85 backdrop-blur border-b border-border/60">
         <div className="flex items-start sm:items-center justify-between gap-3">
           <div className="min-w-0">
+            <BackButton className="-ml-2 mb-1" />
             <h1 className="text-lg sm:text-2xl font-semibold truncate">{pageTitle}</h1>
             <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1 sm:line-clamp-2">
               {pageHint}
