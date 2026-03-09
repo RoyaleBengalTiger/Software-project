@@ -83,6 +83,7 @@ public class MlWorkflowController {
             @RequestPart(value = "cropName", required = false) String cropName,
             @RequestPart(value = "confidence", required = false) String confidence,
             @RequestPart(value = "note", required = false) String note,
+            @RequestPart(value = "aiAdvice", required = false) String aiAdvice,
             @RequestPart("latitude") String latitude,
             @RequestPart("longitude") String longitude,
             @RequestPart(value = "locationText", required = false) String locationText,
@@ -94,6 +95,7 @@ public class MlWorkflowController {
         req.setCropName(cropName);
         req.setConfidence(confidence != null ? Double.parseDouble(confidence) : null);
         req.setNote(note);
+        req.setAiAdvice(aiAdvice);
         req.setLatitude(Double.parseDouble(latitude));
         req.setLongitude(Double.parseDouble(longitude));
         req.setLocationText(locationText);

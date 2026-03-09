@@ -15,7 +15,11 @@ import org.springframework.web.reactive.function.client.WebClient;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -30,18 +34,11 @@ public class AiAdviceService {
     @Value("${ollama.model:qwen3:8b}")
     private String ollamaModel;
 
-    @Value("${ollama.temperature:0.3}")
-    private double ollamaTemperature;
-
-    @Value("${ollama.num-ctx:16384}")
-    private int ollamaNumCtx;
-
     @Value("${ollama.timeout-seconds:120}")
     private int ollamaTimeoutSeconds;
 
-    // Disease class label -> knowledge text
+    // Loaded once at startup
     private final Map<String, String> knowledgeBase = new HashMap<>();
-    private String crossCuttingKnowledge = "";
 
     public AiAdviceService(WebClient genericWebClient) {
         this.webClient = genericWebClient;
@@ -58,68 +55,84 @@ public class AiAdviceService {
                 if (filename == null) continue;
 
                 String key = filename.replace(".txt", "");
-                String content = new String(resource.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-
-                if ("cross_cutting".equals(key)) {
-                    crossCuttingKnowledge = content;
-                } else {
-                    knowledgeBase.put(key, content);
+                if ("cross_cutting".equalsIgnoreCase(key)) {
+                    continue; // no longer used in prompt
                 }
+
+                String content = new String(resource.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+                knowledgeBase.put(key, content);
             }
 
-            log.info("Loaded {} disease knowledge entries + cross-cutting guidance", knowledgeBase.size());
+            log.info("Loaded {} disease knowledge entries", knowledgeBase.size());
         } catch (IOException e) {
             log.warn("Failed to load knowledge base files: {}", e.getMessage());
         }
     }
 
     /**
-     * Generate structured advice using local Ollama model grounded in the knowledge base.
+     * Generates both English and Bangla advice in a single Ollama call.
+     * Bangla must be a direct translation of the English advice.
      */
     public AdviceResponse getAdvice(String cropName, String diseaseName, Double confidence) {
         try {
             String knowledge = retrieveKnowledge(cropName, diseaseName);
             String prompt = buildPrompt(cropName, diseaseName, confidence, knowledge);
+
+            log.info("Advice prompt length: {} chars", prompt.length());
+
+            long start = System.nanoTime();
             String rawResponse = callOllama(prompt);
+            long end = System.nanoTime();
+
+            long durationMs = (end - start) / 1_000_000;
+            log.info("Ollama response took {} ms", durationMs);
+
             return parseAdviceResponse(rawResponse);
         } catch (Exception e) {
-            log.error("Ollama advice generation failed: {}", e.getMessage());
+            log.error("Ollama advice generation failed: {}", e.getMessage(), e);
             return fallbackAdvice(cropName, diseaseName, confidence);
         }
     }
 
+    /**
+     * Retrieves only the associated disease knowledge for the current prediction.
+     */
     private String retrieveKnowledge(String cropName, String diseaseName) {
-        // Try exact match with the ML classifier label format: "Crop___Disease"
-        // The prediction comes as "Tomato___Early_blight", the knowledge files use the same key
-        String classLabel = cropName + "___" + diseaseName;
-        // Normalize: remove spaces from crop/disease for matching
-        String normalizedLabel = classLabel.replace(" ", "_");
+        List<String> candidates = buildKnowledgeKeyCandidates(cropName, diseaseName);
 
-        // Try exact match first
-        if (knowledgeBase.containsKey(normalizedLabel)) {
-            return knowledgeBase.get(normalizedLabel);
-        }
-
-        // Try just disease name (for rice diseases like Bacterialblight, Blast, etc.)
-        String diseaseOnly = diseaseName.replace(" ", "");
-        if (knowledgeBase.containsKey(diseaseOnly)) {
-            return knowledgeBase.get(diseaseOnly);
-        }
-
-        // Try case-insensitive search
-        for (Map.Entry<String, String> entry : knowledgeBase.entrySet()) {
-            if (entry.getKey().equalsIgnoreCase(normalizedLabel)
-                    || entry.getKey().equalsIgnoreCase(diseaseOnly)) {
-                return entry.getValue();
+        // Exact match
+        for (String candidate : candidates) {
+            if (knowledgeBase.containsKey(candidate)) {
+                log.info("Knowledge base matched exact key: {}", candidate);
+                return knowledgeBase.get(candidate);
             }
         }
 
-        // Fuzzy: check if any key contains the disease name
-        String diseaseLower = diseaseName.toLowerCase().replace(" ", "").replace("_", "");
+        // Case-insensitive exact match
         for (Map.Entry<String, String> entry : knowledgeBase.entrySet()) {
-            String keyLower = entry.getKey().toLowerCase().replace("_", "");
-            if (keyLower.contains(diseaseLower) || diseaseLower.contains(keyLower)) {
-                return entry.getValue();
+            for (String candidate : candidates) {
+                if (entry.getKey().equalsIgnoreCase(candidate)) {
+                    log.info("Knowledge base matched case-insensitive key: {}", entry.getKey());
+                    return entry.getValue();
+                }
+            }
+        }
+
+        // Normalized fuzzy contains match
+        List<String> normalizedCandidates = candidates.stream()
+                .map(this::normalizeLoose)
+                .toList();
+
+        for (Map.Entry<String, String> entry : knowledgeBase.entrySet()) {
+            String entryNorm = normalizeLoose(entry.getKey());
+
+            for (String candidateNorm : normalizedCandidates) {
+                if (entryNorm.equals(candidateNorm)
+                        || entryNorm.contains(candidateNorm)
+                        || candidateNorm.contains(entryNorm)) {
+                    log.info("Knowledge base matched fuzzy key: {}", entry.getKey());
+                    return entry.getValue();
+                }
             }
         }
 
@@ -127,66 +140,125 @@ public class AiAdviceService {
         return "";
     }
 
+    private List<String> buildKnowledgeKeyCandidates(String cropName, String diseaseName) {
+        List<String> candidates = new ArrayList<>();
+
+        String crop = cropName == null ? "" : cropName.trim();
+        String disease = diseaseName == null ? "" : diseaseName.trim();
+
+        String cropUnderscore = crop.replace(" ", "_");
+        String diseaseUnderscore = disease.replace(" ", "_");
+        String diseaseNoSpace = disease.replace(" ", "");
+        String diseaseNoUnderscore = disease.replace("_", "");
+        String diseaseCompact = disease.replace(" ", "").replace("_", "");
+
+        // Full classifier-style labels
+        candidates.add(crop + "___" + disease);
+        candidates.add(cropUnderscore + "___" + disease);
+        candidates.add(crop + "___" + diseaseUnderscore);
+        candidates.add(cropUnderscore + "___" + diseaseUnderscore);
+        candidates.add(cropUnderscore + "___" + diseaseNoSpace);
+        candidates.add(cropUnderscore + "___" + diseaseCompact);
+
+        // Disease-only fallbacks
+        candidates.add(disease);
+        candidates.add(diseaseUnderscore);
+        candidates.add(diseaseNoSpace);
+        candidates.add(diseaseNoUnderscore);
+        candidates.add(diseaseCompact);
+
+        List<String> unique = new ArrayList<>();
+        for (String c : candidates) {
+            if (c != null && !c.isBlank() && !unique.contains(c)) {
+                unique.add(c);
+            }
+        }
+        return unique;
+    }
+
+    private String normalizeLoose(String value) {
+        return value == null ? "" : value.toLowerCase().replace(" ", "").replace("_", "").replace("-", "");
+    }
+
     private String buildPrompt(String cropName, String diseaseName, Double confidence, String knowledge) {
+        String confidenceText = confidence != null
+                ? String.format("%.0f%%", confidence * 100)
+                : "N/A";
+
         String confidenceNote = "";
         if (confidence != null && confidence < 0.7) {
-            confidenceNote = "\nIMPORTANT: The prediction confidence is LOW (" +
-                    String.format("%.0f%%", confidence * 100) +
-                    "). Mention this uncertainty and suggest the farmer verify the diagnosis with a local expert.";
+            confidenceNote = """
+
+                    IMPORTANT:
+                    - Confidence is low.
+                    - Clearly mention uncertainty.
+                    - Recommend verification by a local agricultural officer or expert.
+                    """;
         }
 
+        String diseaseKnowledge = knowledge.isBlank()
+                ? "No specific disease knowledge available."
+                : knowledge;
+
         return """
-                You are an agricultural advisor helping farmers in Bangladesh. \
-                A disease prediction system has analyzed a leaf image and returned the following result.
+                You are an agricultural advisor for farmers in Bangladesh.
 
                 Crop: %s
                 Predicted Disease: %s
                 Confidence: %s%s
 
-                === KNOWLEDGE BASE (use this as primary source of truth) ===
+                DISEASE KNOWLEDGE:
                 %s
 
-                === CROSS-CUTTING GUIDANCE ===
-                %s
+                RULES:
+                - Use the predicted disease as the main diagnosis.
+                - Do not invent another disease.
+                - Base advice mainly on the disease knowledge above.
+                - Keep advice simple, practical, and farmer-friendly.
+                - Do not give exact chemical dosages unless explicitly stated in the knowledge.
+                - If knowledge is missing, give cautious general advice only.
+                - Bangla must be a faithful translation of English.
+                - Do not add extra information in Bangla.
 
-                === INSTRUCTIONS ===
-                - Use the predicted disease as the PRIMARY diagnosis. Do NOT invent a different disease.
-                - Base your advice on the knowledge base above. Prefer knowledge base content over your general knowledge.
-                - Keep language simple, practical, and farmer-friendly.
-                - Provide practical treatment and prevention advice.
-                - Do NOT recommend specific chemical dosages unless explicitly stated in the knowledge base.
-                - If a chemical is mentioned in the knowledge base, tell the farmer to follow the local label and guidance.
-
-                You MUST respond with ONLY a valid JSON object (no markdown, no explanation outside the JSON) in this exact format:
+                Return only this JSON:
                 {
-                  "summary": "A brief 2-3 sentence summary of what the disease is and its impact",
-                  "immediate_actions": ["action 1", "action 2", "action 3"],
-                  "prevention": ["prevention measure 1", "prevention measure 2"],
-                  "why_this_happens": ["cause 1", "cause 2"],
-                  "when_to_escalate": "When the farmer should seek professional help"
+                  "english": {
+                    "summary": "",
+                    "immediate_actions": [],
+                    "prevention": [],
+                    "why_this_happens": [],
+                    "when_to_escalate": ""
+                  },
+                  "bangla": {
+                    "summary": "",
+                    "immediate_actions": [],
+                    "prevention": [],
+                    "why_this_happens": [],
+                    "when_to_escalate": ""
+                  }
                 }
 
-                Respond with ONLY the JSON object. No other text. /no_think
+                /no_think
                 """.formatted(
                 cropName,
                 diseaseName,
-                confidence != null ? String.format("%.0f%%", confidence * 100) : "N/A",
+                confidenceText,
                 confidenceNote,
-                knowledge.isEmpty() ? "No specific knowledge available for this disease." : knowledge,
-                crossCuttingKnowledge.isEmpty() ? "N/A" : crossCuttingKnowledge
+                diseaseKnowledge
         );
     }
 
+    /**
+     * Uses Ollama defaults like the Ollama app:
+     * - no forced num_ctx
+     * - no forced temperature
+     */
     private String callOllama(String prompt) {
-        Map<String, Object> options = new LinkedHashMap<>();
-        options.put("temperature", ollamaTemperature);
-        options.put("num_ctx", ollamaNumCtx);
-
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("model", ollamaModel);
         payload.put("prompt", prompt);
         payload.put("stream", false);
-        payload.put("options", options);
+        payload.put("keep_alive", "10m");
 
         String response = webClient.post()
                 .uri(ollamaBaseUrl + "/api/generate")
@@ -201,18 +273,37 @@ public class AiAdviceService {
             throw new RuntimeException("Ollama returned null response");
         }
 
-        // Ollama returns { "response": "...", ... }
         try {
             JsonNode root = objectMapper.readTree(response);
-            return root.path("response").asText("");
+
+            long totalNs = root.path("total_duration").asLong(0);
+            long loadNs = root.path("load_duration").asLong(0);
+            long promptEvalNs = root.path("prompt_eval_duration").asLong(0);
+            long evalNs = root.path("eval_duration").asLong(0);
+            int promptTokens = root.path("prompt_eval_count").asInt(0);
+            int evalTokens = root.path("eval_count").asInt(0);
+
+            log.info(
+                    "Ollama timing: total={} ms, load={} ms, prompt_eval={} ms, eval={} ms, prompt_tokens={}, eval_tokens={}",
+                    totalNs / 1_000_000,
+                    loadNs / 1_000_000,
+                    promptEvalNs / 1_000_000,
+                    evalNs / 1_000_000,
+                    promptTokens,
+                    evalTokens
+            );
+
+            String text = root.path("response").asText("");
+            text = text.replaceAll("(?s)<think>.*?</think>", "").strip();
+            return text;
         } catch (Exception e) {
-            throw new RuntimeException("Failed to parse Ollama response: " + e.getMessage());
+            throw new RuntimeException("Failed to parse Ollama response: " + e.getMessage(), e);
         }
     }
 
     AdviceResponse parseAdviceResponse(String raw) {
-        // Strip markdown code fences if present
-        String cleaned = raw.strip();
+        String cleaned = raw == null ? "" : raw.strip();
+
         if (cleaned.startsWith("```")) {
             cleaned = cleaned.replaceFirst("```[a-zA-Z]*\\s*", "");
             if (cleaned.endsWith("```")) {
@@ -221,7 +312,6 @@ public class AiAdviceService {
             cleaned = cleaned.strip();
         }
 
-        // Try to find JSON object in the response
         int braceStart = cleaned.indexOf('{');
         int braceEnd = cleaned.lastIndexOf('}');
         if (braceStart >= 0 && braceEnd > braceStart) {
@@ -229,33 +319,53 @@ public class AiAdviceService {
         }
 
         try {
-            JsonNode json = objectMapper.readTree(cleaned);
+            JsonNode root = objectMapper.readTree(cleaned);
+
+            JsonNode english = root.path("english");
+            JsonNode bangla = root.path("bangla");
 
             return AdviceResponse.builder()
-                    .summary(json.path("summary").asText("No summary available."))
-                    .immediateActions(jsonArrayToList(json.path("immediate_actions")))
-                    .prevention(jsonArrayToList(json.path("prevention")))
-                    .whyThisHappens(jsonArrayToList(json.path("why_this_happens")))
-                    .whenToEscalate(json.path("when_to_escalate").asText("Consult a local agricultural officer if symptoms persist or worsen."))
+                    .summary(english.path("summary").asText("No summary available."))
+                    .immediateActions(jsonArrayToList(english.path("immediate_actions")))
+                    .prevention(jsonArrayToList(english.path("prevention")))
+                    .whyThisHappens(jsonArrayToList(english.path("why_this_happens")))
+                    .whenToEscalate(
+                            english.path("when_to_escalate")
+                                    .asText("Consult a local agricultural officer if symptoms persist or worsen.")
+                    )
+                    .summaryBn(blankToNull(bangla.path("summary").asText(null)))
+                    .immediateActionsBn(jsonArrayToListNullable(bangla.path("immediate_actions")))
+                    .preventionBn(jsonArrayToListNullable(bangla.path("prevention")))
+                    .whyThisHappensBn(jsonArrayToListNullable(bangla.path("why_this_happens")))
+                    .whenToEscalateBn(blankToNull(bangla.path("when_to_escalate").asText(null)))
                     .build();
+
         } catch (Exception e) {
-            log.warn("Failed to parse Ollama JSON response, using raw text. Error: {}", e.getMessage());
-            // Fallback: wrap the raw text as a summary
+            log.warn("Failed to parse Ollama JSON response, using fallback parsing. Error: {}", e.getMessage());
+
             return AdviceResponse.builder()
-                    .summary(raw.length() > 500 ? raw.substring(0, 500) + "..." : raw)
+                    .summary(cleaned.length() > 500 ? cleaned.substring(0, 500) + "..." : cleaned)
                     .immediateActions(List.of("Please consult a local agricultural officer for specific guidance."))
                     .prevention(List.of("Follow general crop hygiene practices."))
                     .whyThisHappens(List.of("See the summary above for details."))
                     .whenToEscalate("If symptoms worsen or spread rapidly, contact your nearest agricultural officer.")
+                    .summaryBn(null)
+                    .immediateActionsBn(null)
+                    .preventionBn(null)
+                    .whyThisHappensBn(null)
+                    .whenToEscalateBn(null)
                     .build();
         }
     }
 
     private List<String> jsonArrayToList(JsonNode node) {
         List<String> result = new ArrayList<>();
-        if (node.isArray()) {
+        if (node != null && node.isArray()) {
             for (JsonNode item : node) {
-                result.add(item.asText());
+                String text = item.asText("").strip();
+                if (!text.isBlank()) {
+                    result.add(text);
+                }
             }
         }
         if (result.isEmpty()) {
@@ -264,12 +374,30 @@ public class AiAdviceService {
         return result;
     }
 
+    private List<String> jsonArrayToListNullable(JsonNode node) {
+        List<String> result = new ArrayList<>();
+        if (node != null && node.isArray()) {
+            for (JsonNode item : node) {
+                String text = item.asText("").strip();
+                if (!text.isBlank()) {
+                    result.add(text);
+                }
+            }
+        }
+        return result.isEmpty() ? null : result;
+    }
+
+    private String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value.strip();
+    }
+
     private AdviceResponse fallbackAdvice(String cropName, String diseaseName, Double confidence) {
         String confText = confidence != null ? String.format(" (confidence: %.0f%%)", confidence * 100) : "";
+
         return AdviceResponse.builder()
-                .summary("The AI advice system is temporarily unavailable. The prediction indicates " +
-                        diseaseName + " on " + cropName + confText +
-                        ". Please review the details with a local agricultural officer.")
+                .summary("The AI advice system is temporarily unavailable. The prediction indicates "
+                        + diseaseName + " on " + cropName + confText
+                        + ". Please review the details with a local agricultural officer.")
                 .immediateActions(List.of(
                         "Monitor affected plants closely.",
                         "Avoid spreading potential infection to healthy plants.",
@@ -283,6 +411,20 @@ public class AiAdviceService {
                         "Detailed analysis is unavailable at the moment. The prediction system has identified potential symptoms."
                 ))
                 .whenToEscalate("Contact your nearest agricultural office for professional diagnosis and treatment advice.")
+                .summaryBn("এআই পরামর্শ ব্যবস্থা সাময়িকভাবে অনুপলব্ধ। নিকটস্থ কৃষি কর্মকর্তার সাথে যোগাযোগ করুন।")
+                .immediateActionsBn(List.of(
+                        "আক্রান্ত গাছগুলো ভালোভাবে পর্যবেক্ষণ করুন।",
+                        "সম্ভাব্য সংক্রমণ সুস্থ গাছে ছড়ানো এড়িয়ে চলুন।",
+                        "স্থানীয় কৃষি কর্মকর্তার সঙ্গে যোগাযোগ করুন।"
+                ))
+                .preventionBn(List.of(
+                        "সাধারণ ফসল পরিচ্ছন্নতা বজায় রাখুন।",
+                        "সম্ভব হলে রোগ-সহনশীল জাত ব্যবহার করুন।"
+                ))
+                .whyThisHappensBn(List.of(
+                        "এই মুহূর্তে বিস্তারিত বিশ্লেষণ পাওয়া যাচ্ছে না। পূর্বাভাস ব্যবস্থা কিছু উপসর্গ শনাক্ত করেছে।"
+                ))
+                .whenToEscalateBn("পেশাদার রোগ নির্ণয় ও চিকিৎসা পরামর্শের জন্য নিকটস্থ কৃষি অফিসে যোগাযোগ করুন।")
                 .build();
     }
 }

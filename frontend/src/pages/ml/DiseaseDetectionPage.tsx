@@ -182,6 +182,7 @@ export default function DiseaseDetectionPage() {
   const [adviceOpen, setAdviceOpen] = useState(false);
   const [adviceLoading, setAdviceLoading] = useState(false);
   const [adviceReady, setAdviceReady] = useState(false);
+  const [adviceLang, setAdviceLang] = useState<"en" | "bn">("en");
 
   const [busyPredict, setBusyPredict] = useState(false);
   const [busyForward, setBusyForward] = useState(false);
@@ -225,6 +226,7 @@ export default function DiseaseDetectionPage() {
     setAdviceOpen(false);
     setAdviceReady(false);
     setAdviceLoading(false);
+    setAdviceLang("en");
 
     setLocationError(false);
 
@@ -443,18 +445,21 @@ export default function DiseaseDetectionPage() {
 
         const diseaseStr = parsed.disease !== "—" ? parsed.disease : "Unknown";
         const cropStr = parsed.crop !== "—" ? parsed.crop : undefined;
-        const adviceSummary = adviceReady && advice ? `\n\nAI Advice:\n${advice.summary}` : '';
         const noteText = issueNote.trim() || (
           prediction
-            ? `${parsed.crop} - ${diseaseStr}${adviceSummary}`
-            : issueNote.trim() || 'Disease detection - awaiting analysis'
+            ? `${parsed.crop} - ${diseaseStr}`
+            : 'Disease detection - awaiting analysis'
         );
+
+        // Serialize full advice as JSON if available
+        const aiAdviceJson = adviceReady && advice ? JSON.stringify(advice) : undefined;
 
         const res = await issuesApi.createFromMl({
           predictedDisease: diseaseStr,
           cropName: cropStr,
           confidence: prediction?.confidence ?? undefined,
           note: noteText,
+          aiAdvice: aiAdviceJson,
           latitude: lat,
           longitude: lng,
           forwardMode,
@@ -848,28 +853,58 @@ export default function DiseaseDetectionPage() {
                     <h3 className="text-sm font-semibold">AI Expert Advice</h3>
                   </div>
 
-                  {!adviceReady && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="gap-2"
-                      onClick={doAdvice}
-                      disabled={adviceLoading}
-                    >
-                      {adviceLoading ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <Sparkles className="h-3.5 w-3.5" />
-                      )}
-                      {adviceLoading ? "Generating…" : "Get Advice"}
-                    </Button>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {/* EN/BN toggle — only show when advice is ready and Bangla exists */}
+                    {adviceReady && advice?.summaryBn && (
+                      <div className="flex rounded-md border border-border overflow-hidden text-xs">
+                        <button
+                          type="button"
+                          onClick={() => setAdviceLang("en")}
+                          className={`px-2 py-1 font-medium transition-colors ${
+                            adviceLang === "en"
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-background text-muted-foreground hover:bg-muted"
+                          }`}
+                        >
+                          EN
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setAdviceLang("bn")}
+                          className={`px-2 py-1 font-medium transition-colors ${
+                            adviceLang === "bn"
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-background text-muted-foreground hover:bg-muted"
+                          }`}
+                        >
+                          BN
+                        </button>
+                      </div>
+                    )}
 
-                  {adviceReady && (
-                    <span className="text-xs text-emerald-600 font-medium flex items-center gap-1">
-                      <CheckCircle2 className="h-3.5 w-3.5" /> Ready
-                    </span>
-                  )}
+                    {!adviceReady && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-2"
+                        onClick={doAdvice}
+                        disabled={adviceLoading}
+                      >
+                        {adviceLoading ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Sparkles className="h-3.5 w-3.5" />
+                        )}
+                        {adviceLoading ? "Generating…" : "Get Advice"}
+                      </Button>
+                    )}
+
+                    {adviceReady && (
+                      <span className="text-xs text-emerald-600 font-medium flex items-center gap-1">
+                        <CheckCircle2 className="h-3.5 w-3.5" /> Ready
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 <CardContent className="p-4">
@@ -880,75 +915,84 @@ export default function DiseaseDetectionPage() {
                     </div>
                   )}
 
-                  {adviceOpen && advice && !adviceLoading ? (
-                    <div className="space-y-4 max-h-[28rem] overflow-y-auto text-sm">
-                      {/* Summary */}
-                      <div>
-                        <p className="text-foreground/90 leading-relaxed">{advice.summary}</p>
+                  {adviceOpen && advice && !adviceLoading ? (() => {
+                    const isBn = adviceLang === "bn" && !!advice.summaryBn;
+                    const summary = isBn ? advice.summaryBn! : advice.summary;
+                    const actions = isBn && advice.immediateActionsBn ? advice.immediateActionsBn : advice.immediateActions;
+                    const whyHappens = isBn && advice.whyThisHappensBn ? advice.whyThisHappensBn : advice.whyThisHappens;
+                    const prev = isBn && advice.preventionBn ? advice.preventionBn : advice.prevention;
+                    const escalate = isBn && advice.whenToEscalateBn ? advice.whenToEscalateBn : advice.whenToEscalate;
+
+                    return (
+                      <div className="space-y-4 max-h-[28rem] overflow-y-auto text-sm">
+                        {/* Summary */}
+                        <div>
+                          <p className="text-foreground/90 leading-relaxed">{summary}</p>
+                        </div>
+
+                        {/* Immediate Actions */}
+                        {actions?.length > 0 && (
+                          <div>
+                            <h4 className="font-semibold text-xs uppercase tracking-wider text-primary mb-1.5">
+                              {isBn ? "তাৎক্ষণিক পদক্ষেপ" : "Immediate Actions"}
+                            </h4>
+                            <ul className="space-y-1">
+                              {actions.map((a, i) => (
+                                <li key={i} className="flex items-start gap-2 text-foreground/80">
+                                  <span className="text-primary mt-0.5 shrink-0">•</span>
+                                  <span>{a}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {/* Why This Happens */}
+                        {whyHappens?.length > 0 && (
+                          <div>
+                            <h4 className="font-semibold text-xs uppercase tracking-wider text-amber-600 mb-1.5">
+                              {isBn ? "কেন এটি হয়" : "Why This Happens"}
+                            </h4>
+                            <ul className="space-y-1">
+                              {whyHappens.map((w, i) => (
+                                <li key={i} className="flex items-start gap-2 text-foreground/80">
+                                  <span className="text-amber-500 mt-0.5 shrink-0">•</span>
+                                  <span>{w}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {/* Prevention */}
+                        {prev?.length > 0 && (
+                          <div>
+                            <h4 className="font-semibold text-xs uppercase tracking-wider text-emerald-600 mb-1.5">
+                              {isBn ? "প্রতিরোধ" : "Prevention"}
+                            </h4>
+                            <ul className="space-y-1">
+                              {prev.map((p, i) => (
+                                <li key={i} className="flex items-start gap-2 text-foreground/80">
+                                  <span className="text-emerald-500 mt-0.5 shrink-0">•</span>
+                                  <span>{p}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {/* When to Escalate */}
+                        {escalate && (
+                          <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 p-3">
+                            <h4 className="font-semibold text-xs uppercase tracking-wider text-amber-700 dark:text-amber-400 mb-1">
+                              {isBn ? "কখন সাহায্য নিতে হবে" : "When to Seek Help"}
+                            </h4>
+                            <p className="text-foreground/80 text-sm">{escalate}</p>
+                          </div>
+                        )}
                       </div>
-
-                      {/* Immediate Actions */}
-                      {advice.immediateActions?.length > 0 && (
-                        <div>
-                          <h4 className="font-semibold text-xs uppercase tracking-wider text-primary mb-1.5">
-                            Immediate Actions
-                          </h4>
-                          <ul className="space-y-1">
-                            {advice.immediateActions.map((a, i) => (
-                              <li key={i} className="flex items-start gap-2 text-foreground/80">
-                                <span className="text-primary mt-0.5 shrink-0">•</span>
-                                <span>{a}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-
-                      {/* Why This Happens */}
-                      {advice.whyThisHappens?.length > 0 && (
-                        <div>
-                          <h4 className="font-semibold text-xs uppercase tracking-wider text-amber-600 mb-1.5">
-                            Why This Happens
-                          </h4>
-                          <ul className="space-y-1">
-                            {advice.whyThisHappens.map((w, i) => (
-                              <li key={i} className="flex items-start gap-2 text-foreground/80">
-                                <span className="text-amber-500 mt-0.5 shrink-0">•</span>
-                                <span>{w}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-
-                      {/* Prevention */}
-                      {advice.prevention?.length > 0 && (
-                        <div>
-                          <h4 className="font-semibold text-xs uppercase tracking-wider text-emerald-600 mb-1.5">
-                            Prevention
-                          </h4>
-                          <ul className="space-y-1">
-                            {advice.prevention.map((p, i) => (
-                              <li key={i} className="flex items-start gap-2 text-foreground/80">
-                                <span className="text-emerald-500 mt-0.5 shrink-0">•</span>
-                                <span>{p}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-
-                      {/* When to Escalate */}
-                      {advice.whenToEscalate && (
-                        <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 p-3">
-                          <h4 className="font-semibold text-xs uppercase tracking-wider text-amber-700 dark:text-amber-400 mb-1">
-                            When to Seek Help
-                          </h4>
-                          <p className="text-foreground/80 text-sm">{advice.whenToEscalate}</p>
-                        </div>
-                      )}
-                    </div>
-                  ) : !adviceLoading && !advice ? (
+                    );
+                  })() : !adviceLoading && !advice ? (
                     <p className="text-sm text-muted-foreground text-center py-4">
                       Click "Get Advice" for AI-powered treatment recommendations
                     </p>
@@ -1058,6 +1102,52 @@ export default function DiseaseDetectionPage() {
                 <p className="text-sm text-amber-700 dark:text-amber-400">
                   No prediction run yet — the officer will review your images directly.
                 </p>
+              </div>
+            )}
+
+            {/* AI Advice Summary */}
+            {adviceReady && advice && (
+              <div className="space-y-2 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-emerald-600 shrink-0" />
+                  <h4 className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">AI Advice Included</h4>
+                </div>
+                <p className="text-sm text-foreground/80 leading-relaxed">{advice.summary}</p>
+
+                {advice.immediateActions?.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-primary mt-2 mb-1">Immediate Actions</p>
+                    <ul className="space-y-0.5">
+                      {advice.immediateActions.map((a, i) => (
+                        <li key={i} className="flex items-start gap-1.5 text-xs text-foreground/70">
+                          <span className="text-primary mt-0.5 shrink-0">•</span>
+                          <span>{a}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {advice.prevention?.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-emerald-600 mt-2 mb-1">Prevention</p>
+                    <ul className="space-y-0.5">
+                      {advice.prevention.map((p, i) => (
+                        <li key={i} className="flex items-start gap-1.5 text-xs text-foreground/70">
+                          <span className="text-emerald-500 mt-0.5 shrink-0">•</span>
+                          <span>{p}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {advice.whenToEscalate && (
+                  <div className="mt-2 rounded-md bg-amber-500/10 border border-amber-500/15 p-2">
+                    <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 mb-0.5">When to Seek Help</p>
+                    <p className="text-xs text-foreground/70">{advice.whenToEscalate}</p>
+                  </div>
+                )}
               </div>
             )}
 

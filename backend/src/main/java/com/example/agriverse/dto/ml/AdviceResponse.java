@@ -13,4 +13,11 @@ public class AdviceResponse {
     private List<String> prevention;
     private List<String> whyThisHappens;
     private String whenToEscalate;
+
+    // Bangla translations (null if translation failed or not attempted)
+    private String summaryBn;
+    private List<String> immediateActionsBn;
+    private List<String> preventionBn;
+    private List<String> whyThisHappensBn;
+    private String whenToEscalateBn;
 }

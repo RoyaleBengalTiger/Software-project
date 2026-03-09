@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { issuesApi, Issue } from "@/api/issues";
 import { buildFileUrl } from "@/api/util";
@@ -34,6 +34,7 @@ import {
   Shield,
   ChevronLeft,
   ChevronRight,
+  Sparkles,
 } from "lucide-react";
 
 const STATUS_CONFIG: Record<
@@ -148,6 +149,28 @@ export default function IssueDetailModal({
   const isAssignedToMe = issue?.assignedOfficerUsername === user?.username;
   const canAccept = (isGovtOfficer || isAdmin) && issue && !issue.assignedOfficerUsername;
   const canForward = (isGovtOfficer || isAdmin) && issue && isAssignedToMe;
+
+  const parsedAdvice = useMemo(() => {
+    if (!issue?.aiAdvice) return null;
+    try {
+      return JSON.parse(issue.aiAdvice) as {
+        summary?: string;
+        immediateActions?: string[];
+        prevention?: string[];
+        whyThisHappens?: string[];
+        whenToEscalate?: string;
+        summaryBn?: string;
+        immediateActionsBn?: string[];
+        preventionBn?: string[];
+        whyThisHappensBn?: string[];
+        whenToEscalateBn?: string;
+      };
+    } catch {
+      return null;
+    }
+  }, [issue?.aiAdvice]);
+
+  const [adviceLang, setAdviceLang] = useState<"en" | "bn">("en");
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -331,6 +354,115 @@ export default function IssueDetailModal({
                     </div>
                   </div>
                 )}
+
+                {/* AI Advice */}
+                {parsedAdvice && (() => {
+                  const hasBn = !!parsedAdvice.summaryBn;
+                  const isBn = adviceLang === "bn" && hasBn;
+                  const summary = isBn ? parsedAdvice.summaryBn : parsedAdvice.summary;
+                  const actions = isBn && parsedAdvice.immediateActionsBn ? parsedAdvice.immediateActionsBn : parsedAdvice.immediateActions;
+                  const whyHappens = isBn && parsedAdvice.whyThisHappensBn ? parsedAdvice.whyThisHappensBn : parsedAdvice.whyThisHappens;
+                  const prev = isBn && parsedAdvice.preventionBn ? parsedAdvice.preventionBn : parsedAdvice.prevention;
+                  const escalate = isBn && parsedAdvice.whenToEscalateBn ? parsedAdvice.whenToEscalateBn : parsedAdvice.whenToEscalate;
+
+                  return (
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
+                          <Sparkles className="h-3.5 w-3.5" /> AI Advice
+                        </h4>
+                        {hasBn && (
+                          <div className="flex rounded-md border border-border overflow-hidden text-xs">
+                            <button
+                              type="button"
+                              onClick={() => setAdviceLang("en")}
+                              className={`px-2 py-0.5 font-medium transition-colors ${
+                                adviceLang === "en"
+                                  ? "bg-primary text-primary-foreground"
+                                  : "bg-background text-muted-foreground hover:bg-muted"
+                              }`}
+                            >
+                              EN
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setAdviceLang("bn")}
+                              className={`px-2 py-0.5 font-medium transition-colors ${
+                                adviceLang === "bn"
+                                  ? "bg-primary text-primary-foreground"
+                                  : "bg-background text-muted-foreground hover:bg-muted"
+                              }`}
+                            >
+                              BN
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      <div className="space-y-2 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
+                        {summary && (
+                          <p className="text-sm text-foreground/90 leading-relaxed">{summary}</p>
+                        )}
+
+                        {actions && actions.length > 0 && (
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-wider text-primary mt-1 mb-1">
+                              {isBn ? "তাৎক্ষণিক পদক্ষেপ" : "Immediate Actions"}
+                            </p>
+                            <ul className="space-y-0.5">
+                              {actions.map((a, i) => (
+                                <li key={i} className="flex items-start gap-1.5 text-xs text-foreground/70">
+                                  <span className="text-primary mt-0.5 shrink-0">•</span>
+                                  <span>{a}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {whyHappens && whyHappens.length > 0 && (
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-wider text-amber-600 mt-1 mb-1">
+                              {isBn ? "কেন এটি হয়" : "Why This Happens"}
+                            </p>
+                            <ul className="space-y-0.5">
+                              {whyHappens.map((w, i) => (
+                                <li key={i} className="flex items-start gap-1.5 text-xs text-foreground/70">
+                                  <span className="text-amber-500 mt-0.5 shrink-0">•</span>
+                                  <span>{w}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {prev && prev.length > 0 && (
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-wider text-emerald-600 mt-1 mb-1">
+                              {isBn ? "প্রতিরোধ" : "Prevention"}
+                            </p>
+                            <ul className="space-y-0.5">
+                              {prev.map((p, i) => (
+                                <li key={i} className="flex items-start gap-1.5 text-xs text-foreground/70">
+                                  <span className="text-emerald-500 mt-0.5 shrink-0">•</span>
+                                  <span>{p}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {escalate && (
+                          <div className="mt-1 rounded-md bg-amber-500/10 border border-amber-500/15 p-2">
+                            <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 mb-0.5">
+                              {isBn ? "কখন সাহায্য নিতে হবে" : "When to Seek Help"}
+                            </p>
+                            <p className="text-xs text-foreground/70">{escalate}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* Linked Chat */}
                 {issue.linkedChatId && (

@@ -19,6 +19,7 @@ public class IssueResponse {
     private DiagnosisSource diagnosisSource;
     private IssueStatus status;
     private String note;
+    private String aiAdvice;
     private Double latitude;
     private Double longitude;
     private String locationText;

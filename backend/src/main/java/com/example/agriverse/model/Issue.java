@@ -47,6 +47,9 @@ public class Issue {
     @Column(columnDefinition = "TEXT")
     private String note;
 
+    @Column(columnDefinition = "TEXT")
+    private String aiAdvice;
+
     @Column(nullable = false)
     private Double latitude;
 

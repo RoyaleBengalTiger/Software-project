@@ -14,6 +14,7 @@ public class CreateIssueRequest {
     private String cropName;
     private Double confidence;
     private String note;
+    private String aiAdvice;
 
     @NotNull
     private Double latitude;

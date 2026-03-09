@@ -49,6 +49,12 @@ export type AdviceData = {
   prevention: string[];
   whyThisHappens: string[];
   whenToEscalate: string;
+  // Bangla translations (null if translation failed)
+  summaryBn?: string | null;
+  immediateActionsBn?: string[] | null;
+  preventionBn?: string[] | null;
+  whyThisHappensBn?: string[] | null;
+  whenToEscalateBn?: string | null;
 };
 
 export type MlAdviceResponse = {

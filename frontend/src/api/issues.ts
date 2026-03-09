@@ -20,6 +20,7 @@ export type Issue = {
   diagnosisSource: DiagnosisSource;
   status: IssueStatus;
   note?: string | null;
+  aiAdvice?: string | null;
   latitude: number;
   longitude: number;
   locationText?: string | null;
@@ -83,6 +84,7 @@ export const issuesApi = {
     cropName?: string;
     confidence?: number;
     note?: string;
+    aiAdvice?: string;
     latitude: number;
     longitude: number;
     locationText?: string;
@@ -94,6 +96,7 @@ export const issuesApi = {
     if (data.cropName) fd.append("cropName", data.cropName);
     if (data.confidence != null) fd.append("confidence", String(data.confidence));
     if (data.note) fd.append("note", data.note);
+    if (data.aiAdvice) fd.append("aiAdvice", data.aiAdvice);
     fd.append("latitude", String(data.latitude));
     fd.append("longitude", String(data.longitude));
     if (data.locationText) fd.append("locationText", data.locationText);
