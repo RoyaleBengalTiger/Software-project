@@ -1,0 +1,73 @@
+## Crop
+Tomato
+
+## Class type
+Arthropod pest, not a plant disease
+
+## Pest name
+Two-spotted spider mite (*Tetranychus urticae*)
+
+## Why it matters
+This class is important because your model may predict a pest problem rather than an infectious disease. Heavy infestations can reduce vigor, cause leaf bronzing, and worsen under hot, dry conditions.
+
+## Key symptoms
+- Fine pale speckling or stippling on leaves
+- Bronzing or russeting as feeding continues
+- Leaf curling, drying, or drop in heavy infestations
+- Fine webbing on undersides or between leaves/stems when populations are high
+- Tiny moving dots on leaf undersides; mites are very small and may require magnification
+
+## Favorable conditions
+- Hot, dry weather
+- Dusty conditions
+- Water-stressed plants
+- Broad-spectrum insecticide use that disrupts natural enemies
+
+## Spread and biology
+- Mites multiply quickly in favorable weather.
+- Populations often begin on field edges or stressed plants and then spread.
+- They are arachnids, not insects, so insect-only thinking can lead to control mistakes.
+
+## Look-alikes
+- Nutrient speckling or spray injury can mimic stippling.
+- Some virus symptoms cause mottling, but webbing and visible mites point strongly to spider mites.
+
+## Impact
+- Reduced photosynthesis and plant vigor
+- Can flare explosively under heat and drought
+- May cause significant leaf loss if unmanaged
+
+## Immediate actions
+- Inspect the underside of leaves.
+- Check for webbing and moving mites.
+- Reduce dust and plant stress where possible.
+- Avoid unnecessary broad-spectrum insecticides that kill predators.
+
+## Integrated management
+### Cultural control
+- Reduce dust.
+- Maintain even irrigation to reduce plant stress.
+- Remove heavily infested leaves in small-scale systems.
+
+### Biological control
+- Preserve predatory mites and beneficial insects.
+- Avoid disruptive sprays when possible.
+
+### Direct control
+- Water sprays, insecticidal soaps, horticultural oils, or locally recommended miticides can be used depending on system and scale.
+- Coverage of leaf undersides matters.
+- Follow local labels carefully.
+
+## When to escalate
+- Heavy webbing or widespread bronzing
+- Infestation persists after basic control efforts
+- Need for miticide selection in commercial production
+
+## Farmer-facing explanation
+Two-spotted spider mites are tiny sap-feeding pests that thrive in hot, dry conditions. They usually cause fine pale speckles first, then bronzing and webbing. Because they are mites, not insects, preserving natural enemies and choosing the right control approach is important.
+
+## Backend tags
+`tomato`, `spider-mite`, `arthropod`, `hot-dry-risk`, `webbing`
+
+## Source anchors
+UC IPM: Spider Mites; UMN Extension: Twospotted spider mites in home gardens.

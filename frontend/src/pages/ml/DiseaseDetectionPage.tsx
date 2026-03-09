@@ -14,6 +14,7 @@ import {
   mlAdvice,
   mlPredict,
   MlPredictionResponse,
+  AdviceData,
 } from "@/api/ml";
 
 import { issuesApi } from "@/api/issues";
@@ -55,10 +56,6 @@ type Step = (typeof STEPS)[number]["key"];
 
 function getStepIndex(step: Step) {
   return STEPS.findIndex((s) => s.key === step);
-}
-
-function formatAdvice(text: string) {
-  return text.replace(/(\d+\))/g, "\n$1").replace(/\n+/g, "\n\n").trim();
 }
 
 function pct(x?: number) {
@@ -181,7 +178,7 @@ export default function DiseaseDetectionPage() {
   const [isLeafDetected, setIsLeafDetected] = useState<boolean | null>(null);
   const [notLeaf, setNotLeaf] = useState<string | null>(null);
 
-  const [advice, setAdvice] = useState("—");
+  const [advice, setAdvice] = useState<AdviceData | null>(null);
   const [adviceOpen, setAdviceOpen] = useState(false);
   const [adviceLoading, setAdviceLoading] = useState(false);
   const [adviceReady, setAdviceReady] = useState(false);
@@ -224,7 +221,7 @@ export default function DiseaseDetectionPage() {
     setIsLeafDetected(null);
     setNotLeaf(null);
 
-    setAdvice("—");
+    setAdvice(null);
     setAdviceOpen(false);
     setAdviceReady(false);
     setAdviceLoading(false);
@@ -389,16 +386,16 @@ export default function DiseaseDetectionPage() {
 
     setAdviceOpen(true);
     setAdviceLoading(true);
-    setAdvice("Loading advice…");
+    setAdvice(null);
 
     try {
-      const res = await mlAdvice(parsed.crop, parsed.disease);
-      setAdvice(res.answer ?? "No advice available");
+      const res = await mlAdvice(parsed.crop, parsed.disease, prediction.confidence);
+      setAdvice(res.advice ?? null);
       setAdviceReady(true);
-      toast({ title: "AI Advice Ready ✅" });
+      toast({ title: "AI Advice Ready" });
     } catch {
-      setAdvice("AI advice failed.");
-      toast({ title: "Advice Failed", variant: "destructive" });
+      setAdvice(null);
+      toast({ title: "Advice Failed", description: "Could not generate advice. Ollama may be offline.", variant: "destructive" });
     } finally {
       setAdviceLoading(false);
     }
@@ -446,9 +443,10 @@ export default function DiseaseDetectionPage() {
 
         const diseaseStr = parsed.disease !== "—" ? parsed.disease : "Unknown";
         const cropStr = parsed.crop !== "—" ? parsed.crop : undefined;
+        const adviceSummary = adviceReady && advice ? `\n\nAI Advice:\n${advice.summary}` : '';
         const noteText = issueNote.trim() || (
           prediction
-            ? `${parsed.crop} - ${diseaseStr}${adviceReady ? `\n\nAI Advice:\n${advice}` : ''}`
+            ? `${parsed.crop} - ${diseaseStr}${adviceSummary}`
             : issueNote.trim() || 'Disease detection - awaiting analysis'
         );
 
@@ -875,15 +873,86 @@ export default function DiseaseDetectionPage() {
                 </div>
 
                 <CardContent className="p-4">
-                  {adviceOpen ? (
-                    <div className="text-sm leading-relaxed whitespace-pre-wrap text-foreground/90 max-h-64 overflow-y-auto">
-                      {formatAdvice(advice)}
+                  {adviceLoading && (
+                    <div className="flex items-center justify-center gap-2 py-6 text-muted-foreground text-sm">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Generating advice from local AI model...
                     </div>
-                  ) : (
+                  )}
+
+                  {adviceOpen && advice && !adviceLoading ? (
+                    <div className="space-y-4 max-h-[28rem] overflow-y-auto text-sm">
+                      {/* Summary */}
+                      <div>
+                        <p className="text-foreground/90 leading-relaxed">{advice.summary}</p>
+                      </div>
+
+                      {/* Immediate Actions */}
+                      {advice.immediateActions?.length > 0 && (
+                        <div>
+                          <h4 className="font-semibold text-xs uppercase tracking-wider text-primary mb-1.5">
+                            Immediate Actions
+                          </h4>
+                          <ul className="space-y-1">
+                            {advice.immediateActions.map((a, i) => (
+                              <li key={i} className="flex items-start gap-2 text-foreground/80">
+                                <span className="text-primary mt-0.5 shrink-0">•</span>
+                                <span>{a}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* Why This Happens */}
+                      {advice.whyThisHappens?.length > 0 && (
+                        <div>
+                          <h4 className="font-semibold text-xs uppercase tracking-wider text-amber-600 mb-1.5">
+                            Why This Happens
+                          </h4>
+                          <ul className="space-y-1">
+                            {advice.whyThisHappens.map((w, i) => (
+                              <li key={i} className="flex items-start gap-2 text-foreground/80">
+                                <span className="text-amber-500 mt-0.5 shrink-0">•</span>
+                                <span>{w}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* Prevention */}
+                      {advice.prevention?.length > 0 && (
+                        <div>
+                          <h4 className="font-semibold text-xs uppercase tracking-wider text-emerald-600 mb-1.5">
+                            Prevention
+                          </h4>
+                          <ul className="space-y-1">
+                            {advice.prevention.map((p, i) => (
+                              <li key={i} className="flex items-start gap-2 text-foreground/80">
+                                <span className="text-emerald-500 mt-0.5 shrink-0">•</span>
+                                <span>{p}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* When to Escalate */}
+                      {advice.whenToEscalate && (
+                        <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 p-3">
+                          <h4 className="font-semibold text-xs uppercase tracking-wider text-amber-700 dark:text-amber-400 mb-1">
+                            When to Seek Help
+                          </h4>
+                          <p className="text-foreground/80 text-sm">{advice.whenToEscalate}</p>
+                        </div>
+                      )}
+                    </div>
+                  ) : !adviceLoading && !advice ? (
                     <p className="text-sm text-muted-foreground text-center py-4">
                       Click "Get Advice" for AI-powered treatment recommendations
                     </p>
-                  )}
+                  ) : null}
                 </CardContent>
               </Card>
             )}

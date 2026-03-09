@@ -1,0 +1,73 @@
+## Crop
+Rice
+
+## Disease type
+Fungal disease
+
+## Causal organism
+*Bipolaris oryzae* (syn. *Cochliobolus miyabeanus*)
+
+## Why it matters
+Brown spot is often associated with poor crop vigor, nutrient stress, drought stress, or poor soils. It can affect leaves and grains and may reduce seed quality and yield.
+
+## Key symptoms
+- Small circular to oval brown lesions on leaves.
+- Lesions may have a darker brown margin and lighter center.
+- Numerous lesions can merge, causing larger blighted areas.
+- On grains, discoloration may appear as dark spotting.
+- Seedlings from infected seed may emerge weakly.
+
+## Disease spread and survival
+- The fungus can survive on seed and crop residues.
+- Spores spread by air and rain splash.
+- Infected seed is an important source for new crop infection.
+
+## Favorable conditions
+- Nutrient-deficient soils, especially low fertility situations
+- Drought stress or intermittent water stress
+- Poor seed quality
+- Warm humid weather after crop stress
+
+## Look-alikes / confusion points
+- Blast lesions are more spindle-shaped and often have gray centers.
+- Brown spot tends to be more uniformly brown and associated with low-vigor fields.
+
+## Impact
+- Reduced leaf area and photosynthesis
+- Lower grain quality and seed quality
+- Greater impact in already stressed crops
+
+## Immediate field actions
+- Check whether the field also shows signs of nutrient stress.
+- Review fertilizer history, especially balanced NPK management.
+- Separate seed intended for future planting from heavily affected lots.
+
+## Integrated management
+### Seed management
+- Use high-quality, disease-free seed.
+- Consider seed treatment if locally recommended.
+
+### Soil and plant nutrition
+- Improve overall fertility and soil health.
+- Correct major nutrient imbalances according to local recommendations.
+
+### Crop hygiene
+- Manage residues and volunteers.
+- Avoid saving seed from badly affected fields.
+
+### Fungicides
+- May be used in some production systems, but correcting crop stress and using healthy seed are foundational.
+
+## When to escalate
+- Widespread lesions plus poor field vigor
+- Severe grain spotting in seed-production fields
+- Brown spot suspected together with other stresses and unclear diagnosis
+
+## Farmer-facing explanation
+Brown spot often becomes serious in weak or stressed rice crops. The spots are usually brown and more uniform than blast lesions. Improving seed quality, field fertility, and overall crop vigor is often as important as direct disease control.
+
+## Backend tags
+`rice`, `fungal`, `brown-spot`, `stress-associated`, `seed-quality-risk`
+
+## Source anchors
+IRRI Rice Diseases Online Resource; APS Common Names of Plant Diseases—Rice.

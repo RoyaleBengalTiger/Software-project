@@ -1,0 +1,69 @@
+## Crop
+Potato
+
+## Disease type
+Fungal disease
+
+## Causal organism
+*Alternaria solani*
+
+## Why it matters
+Early blight is common in potato and can defoliate plants, reduce photosynthesis, and weaken yield, especially when plants are already under nutrient or other stress.
+
+## Key symptoms
+- Older leaves are affected first.
+- Small dark brown spots enlarge into round lesions with **target-like concentric rings**.
+- Tissue around lesions often turns yellow.
+- Severe infections cause yellowing, drying, and leaf drop.
+- Stems may develop dark, slightly sunken lesions.
+- Tubers can develop dark, sunken lesions with corky dry tissue underneath.
+
+## Disease spread and survival
+- Survives in crop debris, volunteer potatoes, and infected plant material.
+- Spores spread by wind, rain splash, and equipment movement.
+
+## Favorable conditions
+- Warm temperatures
+- Repeated dew, irrigation splash, or humid nights
+- Nutrient stress and aging foliage
+- Dense canopy with poor airflow
+
+## Look-alikes
+- Late blight lesions are usually less distinctly ringed and often spread faster in cool wet weather.
+- Nutrient deficiencies do not produce classic concentric-ring lesions.
+
+## Impact
+- Defoliation reduces tuber bulking.
+- Repeated seasons of poor control can increase inoculum pressure.
+
+## Immediate field actions
+- Confirm whether lesions are ringed and mainly on older foliage.
+- Remove heavily diseased volunteer plants near production areas.
+- Review irrigation to reduce prolonged leaf wetness.
+
+## Integrated management
+### Crop rotation and sanitation
+- Rotate away from potato and tomato where possible.
+- Destroy volunteer potatoes and infected debris.
+
+### Plant health
+- Maintain balanced fertility.
+- Reduce plant stress.
+
+### Fungicide programs
+- Preventive or early-season fungicide programs are often used in commercial systems when conditions favor disease.
+- Follow local resistance-management and label guidance.
+
+## When to escalate
+- Rapid increase despite fungicide use
+- Tuber lesions present
+- Confusion with late blight in cool wet weather
+
+## Farmer-facing explanation
+Potato early blight usually starts on older leaves and makes brown spots with ring patterns like a target. It is favored by warm, humid conditions and stressed plants. Good sanitation, balanced nutrition, and timely fungicide protection are the main tools.
+
+## Backend tags
+`potato`, `fungal`, `early-blight`, `target-rings`, `older-leaves-first`
+
+## Source anchors
+UMN Extension: Early blight in tomato and potato; UMN diagnostic guide for potato leaf spots.

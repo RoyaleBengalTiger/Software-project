@@ -1,0 +1,74 @@
+## Crop
+Rice
+
+## Disease type
+Viral disease complex
+
+## Associated viruses
+Rice tungro disease is associated with two viruses: Rice tungro bacilliform virus (RTBV) and Rice tungro spherical virus (RTSV).
+
+## Main vector
+Green leafhopper
+
+## Why it matters
+Tungro can cause severe stunting and significant yield loss, especially when infection happens early and vector pressure is high.
+
+## Key symptoms
+- Yellow to orange-yellow leaf discoloration, often beginning from tips
+- Stunting
+- Reduced tillering
+- Delayed flowering and delayed maturity
+- Small panicles, poor panicle exsertion, and higher sterility
+- Poorly filled grains and dark brown blotches on grains in severe cases
+
+## Spread and survival
+- Spread by green leafhopper vectors
+- Virus persists in infected rice and certain alternative hosts, not just residues alone
+- Disease build-up depends strongly on vector movement and susceptible crop continuity
+
+## Favorable conditions
+- Presence of vector populations
+- Continuous rice cropping or overlapping crops
+- Susceptible varieties
+- Nearby infected fields or volunteer hosts
+
+## Look-alikes
+- Nutrient deficiency can yellow leaves but does not usually cause the same combination of severe stunting, delayed flowering, and vector-associated spread.
+
+## Impact
+- Severe stunting and reduced tillers
+- Poor grain filling and yield loss
+- More serious when infection occurs early in crop growth
+
+## Immediate field actions
+- Check for green leafhopper presence.
+- Mark affected patches and inspect borders.
+- Avoid moving infected nursery material.
+- Review whether neighboring fields are also affected.
+
+## Integrated management
+### Resistant varieties
+- Use tungro-resistant or tolerant varieties where locally recommended.
+
+### Vector management
+- Manage green leafhopper early using locally recommended IPM measures.
+- Coordinate at community level where possible, since vectors move between fields.
+
+### Crop timing and sanitation
+- Synchronous planting can reduce disease carryover.
+- Remove volunteer hosts and diseased nursery sources.
+- Break continuous host availability where feasible.
+
+## When to escalate
+- Early infection in nursery or newly transplanted crop
+- Clear patch spread with vector presence
+- Multiple surrounding fields showing similar symptoms
+
+## Farmer-facing explanation
+Tungro is a virus problem spread by green leafhoppers. It causes yellowing, stunting, poor tillering, and poor grain filling. Early vector management and resistant varieties are the main defenses.
+
+## Backend tags
+`rice`, `virus`, `tungro`, `green-leafhopper`, `stunting`, `yellowing`
+
+## Source anchors
+IRRI Rice Knowledge Bank: Tungro.

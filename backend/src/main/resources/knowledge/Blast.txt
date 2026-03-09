@@ -1,0 +1,85 @@
+## Crop
+Rice
+
+## Disease type
+Fungal disease
+
+## Causal organism
+*Magnaporthe oryzae* (syn. *Pyricularia oryzae*)
+
+## Why it matters
+Rice blast is a globally important rice disease because it can attack leaves, collars, nodes, necks, and panicles. Neck blast is especially damaging because it directly reduces grain filling.
+
+## Key symptoms
+### Leaf blast
+- Classic lesions are **diamond-shaped or spindle-shaped** with gray to whitish centers and brown margins.
+- Small dark spots can enlarge quickly under favorable weather.
+- Young plants may show many lesions that coalesce and kill leaf area.
+
+### Collar, node, and neck blast
+- Lesions at the leaf collar can kill the leaf.
+- Node infection weakens stems.
+- **Neck blast** causes blackened or rotted necks below the panicle, leading to partially filled or empty grains.
+
+### Panicle symptoms
+- Panicles may turn white or dry prematurely.
+- Grain filling is poor when neck infection occurs early.
+
+## Disease spread and survival
+- The fungus survives on infected seed, crop debris, ratoons, and alternative hosts.
+- Spores are produced abundantly and spread by wind and rain.
+- New infections can occur rapidly when leaf surfaces remain wet.
+
+## Favorable conditions
+- Frequent dew, cloudy weather, and long leaf wetness
+- Moderate temperatures
+- Dense canopy and poor airflow
+- Excess nitrogen and low silicon in some systems
+- Drought stress alternating with high humidity can worsen outbreaks
+
+## Look-alikes / confusion points
+- Brown spot lesions are usually smaller and more uniformly brown.
+- Nutrient deficiencies do not typically form the classic spindle-shaped blast lesions.
+
+## Impact
+- Can reduce photosynthesis through leaf damage.
+- Neck and panicle infections cause direct yield loss by reducing grain set and grain filling.
+- Severe outbreaks can devastate susceptible cultivars.
+
+## Immediate field actions
+- Identify whether disease is limited to leaves or has reached the neck/panicle.
+- Avoid additional high nitrogen applications.
+- Flag severely affected zones for separate follow-up.
+- Increase scouting frequency during humid weather.
+
+## Integrated management
+### Resistant varieties
+- Use locally adapted blast-resistant cultivars whenever available.
+
+### Seed and nursery management
+- Use clean seed and avoid carrying over infected nursery material.
+- Manage nursery humidity and density.
+
+### Agronomic practices
+- Balanced fertilization; avoid excessive nitrogen.
+- Good spacing and airflow where transplanting systems allow.
+- Proper water and stress management.
+
+### Fungicide management
+- Where fungicides are locally recommended, timing matters most around panicle initiation to heading for neck blast protection.
+- Always follow local labels and resistance-management guidance.
+
+## When to escalate
+- Symptoms appear near booting, heading, or flowering
+- Neck blast is visible
+- Fast field-wide spread after cloudy, humid weather
+- Resistant variety unexpectedly shows severe disease
+
+## Farmer-facing explanation
+Rice blast often makes spindle-shaped leaf spots and can become much more serious if it reaches the neck of the panicle. Once neck blast develops, grain filling can fail. The most important controls are resistant varieties, balanced fertilization, and early action before heading.
+
+## Backend tags
+`rice`, `fungal`, `blast`, `neck-blast`, `panicle-risk`
+
+## Source anchors
+APS lesson: Rice blast; IRRI Rice Diseases Online Resource.

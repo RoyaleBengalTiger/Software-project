@@ -1,0 +1,74 @@
+## Crop
+Tomato
+
+## Disease type
+Viral disease
+
+## Virus
+Tomato yellow leaf curl virus (TYLCV)
+
+## Main vector
+Whiteflies, especially *Bemisia tabaci* complex
+
+## Why it matters
+TYLCV can be extremely damaging because plants infected early may become severely stunted and set little marketable fruit.
+
+## Key symptoms
+- Upward curling and cupping of leaves
+- Yellowing, especially between veins or on leaf margins
+- Shortened internodes and stunting
+- Reduced flower retention and poor fruit set
+- Plants may appear bushy and dwarfed
+
+## Spread and survival
+- Spread mainly by viruliferous whiteflies
+- Not primarily managed as a mechanically transmitted disease like ToMV
+- Can persist in host plants and move with infected transplants and vector populations
+
+## Favorable conditions
+- Presence of whiteflies
+- Warm climates and protected cultivation
+- Continuous tomato production and nearby host plants
+
+## Look-alikes
+- Herbicide injury, leaf roll, and some nutrient problems can curl leaves.
+- Unlike simple physiological leaf roll, TYLCV usually causes stunting and strong yield effects.
+
+## Impact
+- Severe reduction in growth and fruiting when infection occurs early
+- Heavy economic losses once established in a production site
+
+## Immediate actions
+- Check for whiteflies on the undersides of leaves.
+- Remove heavily infected plants if practical and early enough.
+- Protect healthy plants from vector buildup.
+- Isolate suspect transplants.
+
+## Integrated management
+### Vector management
+- Monitor and manage whiteflies early.
+- Use exclusion methods such as insect screens where possible.
+- Apply locally recommended insecticide / IPM programs for whiteflies.
+
+### Planting material and varieties
+- Use virus-free transplants.
+- Prefer TYLCV-tolerant or resistant cultivars where available.
+
+### Field hygiene
+- Remove weeds and alternate hosts that sustain whiteflies or virus reservoirs.
+- Synchronize planting and break host continuity where feasible.
+
+## When to escalate
+- Whiteflies are abundant
+- Many young plants are stunted and curled
+- Rapid spread in nursery or greenhouse
+- Need help with vector-control program selection
+
+## Farmer-facing explanation
+Tomato yellow leaf curl virus is mainly spread by whiteflies. The leaves curl upward, plants become stunted, and fruit set can fall sharply. The key is early whitefly control, clean transplants, and resistant varieties where available.
+
+## Backend tags
+`tomato`, `virus`, `tylcv`, `whitefly-vector`, `stunting`, `high-priority`
+
+## Source anchors
+NC State Extension: Tomato Yellow Leaf Curl Virus; APS / Phytopathology literature on TYLCV–whitefly interactions.

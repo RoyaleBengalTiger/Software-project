@@ -43,14 +43,30 @@ export async function mlPredict(images: Blob[]) {
   return res.data;
 }
 
-/** POST /api/ml/advice */
-export async function mlAdvice(cropName: string, diseaseName: string) {
-  const res = await apiClient.post<{ answer: string | null }>(
-    "/api/ml/advice",
-    {
-      crop_name: cropName,
-      disease_name: diseaseName,
-    }
-  );
+export type AdviceData = {
+  summary: string;
+  immediateActions: string[];
+  prevention: string[];
+  whyThisHappens: string[];
+  whenToEscalate: string;
+};
+
+export type MlAdviceResponse = {
+  prediction: string;
+  confidence: number;
+  advice: AdviceData;
+};
+
+/** POST /api/ml/advice — returns structured advice from local Ollama */
+export async function mlAdvice(
+  cropName: string,
+  diseaseName: string,
+  confidence?: number
+) {
+  const res = await apiClient.post<MlAdviceResponse>("/api/ml/advice", {
+    crop_name: cropName,
+    disease_name: diseaseName,
+    confidence: confidence != null ? String(confidence) : undefined,
+  });
   return res.data;
 }

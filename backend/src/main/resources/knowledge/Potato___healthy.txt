@@ -1,0 +1,29 @@
+## Crop
+Potato
+
+## Class meaning
+No disease symptoms detected by the classifier in this image.
+
+## Important interpretation rule
+A `healthy` prediction means **the uploaded image did not show recognizable symptoms strongly matching the trained disease classes**. It does **not** guarantee the plant is perfectly healthy.
+
+## What to tell users
+- No disease pattern was confidently detected in the uploaded leaf image.
+- Continue routine scouting.
+- Recheck if symptoms appear later on stems, lower leaves, or tubers.
+- If the plant is wilting, yellowing, stunted, or showing non-leaf symptoms, additional inspection is still needed.
+
+## Recommended follow-up questions
+- Are there stem lesions?
+- Are tubers affected?
+- Is the whole plant wilting?
+- Was there recent frost, heat stress, herbicide exposure, or nutrient problem?
+
+## Preventive advice
+- Maintain balanced irrigation and fertility.
+- Scout weekly, especially after wet weather.
+- Remove volunteers and cull piles.
+- Keep records of unusual patches in the field.
+
+## Backend tags
+`potato`, `healthy`, `no-obvious-leaf-symptom`, `monitor`

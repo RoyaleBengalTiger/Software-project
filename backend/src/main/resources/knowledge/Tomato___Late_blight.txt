@@ -1,0 +1,49 @@
+## Crop
+Tomato
+
+## Disease type
+Oomycete disease (water mold)
+
+## Causal organism
+*Phytophthora infestans*
+
+## Why it matters
+Tomato late blight can spread very quickly in cool, wet weather and infect leaves, stems, and fruit.
+
+## Key symptoms
+- Large, greasy, gray-green to brown lesions that expand rapidly.
+- White fuzzy growth may appear on the underside in humid conditions.
+- Stems can develop dark lesions and collapse.
+- Fruit may develop firm brown lesions.
+
+## Favorable conditions
+- Cool, wet, humid weather
+- Long leaf wetness periods
+- Dense wet canopies
+
+## Disease spread and survival
+- Windborne inoculum can move long distances.
+- Survives in infected host tissue, potatoes, volunteers, and cull piles.
+
+## Immediate actions
+- Treat as urgent.
+- Avoid moving through wet infected plants.
+- Isolate suspect blocks and monitor nearby potatoes too.
+
+## Management
+- Destroy volunteer potatoes and solanaceous bridges.
+- Scout rapidly after cool, wet periods.
+- Use preventive fungicides where locally recommended.
+- Remove severely infected plants in small plots if feasible.
+
+## When to escalate
+- Any suspected late blight should be escalated quickly, especially during favorable weather.
+
+## Farmer-facing explanation
+Tomato late blight is a fast-moving disease of wet, cool conditions. The combination of rapidly expanding dark lesions and possible white growth on the leaf underside is a major warning sign. Quick local action matters.
+
+## Backend tags
+`tomato`, `late-blight`, `urgent`, `cool-wet-risk`
+
+## Source anchors
+UMN Extension: Late blight of tomato and potato.

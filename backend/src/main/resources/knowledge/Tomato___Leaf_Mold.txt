@@ -1,0 +1,59 @@
+## Crop
+Tomato
+
+## Disease type
+Fungal disease
+
+## Causal organism
+*Passalora fulva* (syn. *Fulvia fulva*, *Cladosporium fulvum*)
+
+## Why it matters
+Leaf mold is especially important in humid protected environments such as greenhouses, tunnels, and dense canopies. It mainly affects leaves but can reduce yield through defoliation and poor fruit development.
+
+## Key symptoms
+- Old leaves are usually infected first.
+- Pale green to yellow spots appear on the **upper leaf surface**.
+- Matching **olive-green to brown velvety mold** develops on the underside.
+- Affected leaves yellow, then brown, then may drop.
+- In severe cases, stems, blossoms, and fruit can also be affected.
+
+## Favorable conditions
+- High humidity
+- Poor ventilation
+- Frequent condensation or prolonged leaf wetness
+- Protected cultivation and dense foliage
+
+## Disease spread and survival
+- Spores move with air currents, workers, clothing, and tools.
+- Survives on residues and in protected structures.
+
+## Look-alikes
+- Nutrient chlorosis can yellow leaves but does not create the characteristic olive mold beneath.
+- Early blight lesions are more necrotic and ringed.
+
+## Impact
+- Progressive defoliation
+- Lower photosynthesis and fruit quality loss
+- Recurrent greenhouse problem if sanitation is poor
+
+## Management
+- Reduce humidity and improve ventilation.
+- Space and prune plants to improve airflow.
+- Water early in the day and avoid keeping foliage wet overnight.
+- Remove infected leaves carefully.
+- Use resistant varieties when available.
+- Apply fungicides where locally recommended.
+
+## When to escalate
+- Rapid spread through greenhouse/tunnel blocks
+- Severe disease despite ventilation changes
+- Recurrent outbreaks in the same protected structure
+
+## Farmer-facing explanation
+Leaf mold usually shows yellow patches on top of older tomato leaves and olive velvety growth underneath. Humidity control is the key. In greenhouses and tunnels, airflow and moisture management are often the most important actions.
+
+## Backend tags
+`tomato`, `leaf-mold`, `greenhouse-risk`, `humidity-driven`
+
+## Source anchors
+UMN Extension: Tomato leaf mold; Bayer disease guide: Leaf Mold.

@@ -6,6 +6,7 @@ import com.example.agriverse.repository.RoleRepository;
 import com.example.agriverse.repository.UserRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -13,6 +14,7 @@ import java.util.Set;
 
 @Component
 @AllArgsConstructor
+@Order(1) // run after RoleConfig, before DataSeeder
 public class AdminConfig implements CommandLineRunner {
 
     private final UserRepository userRepository;

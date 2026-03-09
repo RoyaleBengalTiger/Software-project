@@ -1,0 +1,29 @@
+## Crop
+Tomato
+
+## Class meaning
+No disease symptoms detected by the classifier in the uploaded leaf image.
+
+## Interpretation caution
+A healthy prediction means there was no clear match to the trained disease classes in that image. It does not rule out:
+- early infection not yet visible
+- stem or fruit problems
+- nutrient deficiency
+- herbicide injury
+- virus infection with subtle symptoms
+- insect or mite issues on unobserved leaves
+
+## Recommended follow-up
+- Re-scout lower leaves and the newest growth.
+- Check fruit, stems, and the underside of leaves.
+- Re-upload an image if symptoms spread.
+- Ask about weather, irrigation, pesticide drift, and nearby affected plants.
+
+## Preventive care
+- Good airflow
+- Consistent irrigation
+- Regular scouting after rain
+- Clean handling of plants and tools
+
+## Backend tags
+`tomato`, `healthy`, `monitor`, `rescout`

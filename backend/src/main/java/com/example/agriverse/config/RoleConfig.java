@@ -3,9 +3,11 @@ package com.example.agriverse.config;
 import com.example.agriverse.model.Role;
 import com.example.agriverse.repository.RoleRepository;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 @Component
+@Order(0) // must run first — other seeders depend on roles
 public class RoleConfig implements CommandLineRunner {
 
     private final RoleRepository roleRepository;

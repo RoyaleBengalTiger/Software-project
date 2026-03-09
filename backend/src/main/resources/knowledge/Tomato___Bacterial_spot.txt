@@ -1,0 +1,71 @@
+## Crop
+Tomato
+
+## Disease type
+Bacterial disease
+
+## Causal agents
+Several *Xanthomonas* species / groups associated with bacterial spot of tomato
+
+## Why it matters
+Bacterial spot can damage leaves, stems, and fruit. In favorable warm, wet conditions it spreads quickly and can cause defoliation and fruit spotting.
+
+## Key symptoms
+- Small dark water-soaked leaf spots that may become brown to black.
+- Spots can be angular to irregular and may be surrounded by yellow halos.
+- Lesions often start on lower foliage after rain splash.
+- Fruit lesions are small, raised to scabby, and may reduce market value.
+- Heavy infection can lead to leaf drop and sunscald on fruit.
+
+## Disease spread and survival
+- Can be seedborne and transplant-borne.
+- Survives in crop residues and volunteer plants.
+- Spread is favored by splashing water, storms, and handling wet plants.
+
+## Favorable conditions
+- Warm temperatures
+- Frequent rain or overhead irrigation
+- Storm injury and wind damage
+- Dense foliage and prolonged wetness
+
+## Look-alikes
+- Septoria leaf spot usually has many small circular spots with dark margins and tiny black specks in the center.
+- Early blight tends to have larger target-like lesions.
+
+## Impact
+- Defoliation reduces plant vigor and exposes fruit.
+- Fruit lesions reduce marketability.
+
+## Immediate field actions
+- Avoid overhead irrigation if possible.
+- Avoid working plants while wet.
+- Remove severely infected leaves where practical in small-scale systems.
+- Separate seed/transplant sources if bacterial spot is suspected.
+
+## Integrated management
+### Clean planting material
+- Use disease-free seed and transplants.
+- Start with clean trays, tools, and nursery areas.
+
+### Cultural control
+- Improve spacing and airflow.
+- Rotate away from tomato and pepper where possible.
+- Manage volunteer solanaceous plants and residues.
+
+### Chemical control
+- Copper-based products are commonly used in some systems, often with varying effectiveness and possible resistance issues.
+- Follow local labels and resistance guidance.
+
+## When to escalate
+- Fruit lesions are appearing widely
+- Outbreak follows transplanting or storms
+- Nursery/transplant source may be contaminated
+
+## Farmer-facing explanation
+Bacterial spot makes small dark leaf spots and can also mark the fruit. It spreads in warm, rainy weather and from splashing water. Clean transplants, reduced leaf wetness, and early disease management are the main controls.
+
+## Backend tags
+`tomato`, `bacterial`, `bacterial-spot`, `fruit-spotting`, `warm-wet-risk`
+
+## Source anchors
+UMN Extension: Tomato leaf spot diseases; APS tomato disease names.

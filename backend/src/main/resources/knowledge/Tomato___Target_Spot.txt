@@ -1,0 +1,57 @@
+## Crop
+Tomato
+
+## Disease type
+Fungal disease
+
+## Causal organism
+*Corynespora cassiicola*
+
+## Why it matters
+Target spot can affect leaves, stems, and fruit. Under warm humid conditions it can cause rapid tissue collapse and major defoliation.
+
+## Key symptoms
+- Small water-soaked spots that become necrotic lesions.
+- Lesions enlarge into circular spots with light brown to gray centers and darker margins.
+- Concentric zoning can develop, giving a target-like appearance.
+- Stem lesions may be elongated.
+- Immature and mature fruit can develop dark, sunken lesions; mature fruit lesions may crack.
+
+## Favorable conditions
+- Warm temperatures
+- High humidity and prolonged wetness
+- Dense canopies and protected moisture
+
+## Disease spread and survival
+- Spores spread by air movement, rain splash, workers, and tools.
+- The pathogen can persist on plant debris and alternate hosts.
+
+## Look-alikes
+- Can be confused with early blight and bacterial spot.
+- Fruit symptoms may resemble other fruit rots or bacterial lesions.
+
+## Impact
+- Defoliation reduces yield and exposes fruit.
+- Fruit lesions reduce marketability.
+- Severe outbreaks can lead to plant collapse.
+
+## Management
+- Improve airflow and reduce leaf wetness.
+- Remove and destroy infected crop debris.
+- Rotate where practical.
+- Scout fruit as well as foliage.
+- Use fungicides where recommended locally.
+
+## When to escalate
+- Fruit lesions are common
+- Disease is spreading fast in humid protected production
+- Need distinction from early blight, bacterial spot, or late blight
+
+## Farmer-facing explanation
+Target spot can attack leaves, stems, and fruit. The spots can enlarge into circular lesions with darker margins and may resemble other tomato diseases, so fruit inspection and spread pattern are important. Humidity control and early management matter.
+
+## Backend tags
+`tomato`, `target-spot`, `fungal`, `fruit-risk`, `humid-risk`
+
+## Source anchors
+Bayer disease guide: Target Spot of Tomato.

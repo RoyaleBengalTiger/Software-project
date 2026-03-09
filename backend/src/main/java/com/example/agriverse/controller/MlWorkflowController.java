@@ -2,6 +2,7 @@ package com.example.agriverse.controller;
 
 import com.example.agriverse.dto.CreateIssueRequest;
 import com.example.agriverse.dto.IssueResponse;
+import com.example.agriverse.dto.ml.AdviceResponse;
 import com.example.agriverse.dto.ml.MlPredictionResponse;
 import com.example.agriverse.service.MlPredictionService;
 import com.example.agriverse.service.IssueService;
@@ -55,11 +56,20 @@ public class MlWorkflowController {
 
     @PostMapping("/advice")
     public Map<String, Object> advice(@RequestBody Map<String, String> body) {
-        String cropName = body.get("crop_name");
-        String diseaseName = body.get("disease_name");
+        String cropName = body.getOrDefault("crop_name", "Unknown");
+        String diseaseName = body.getOrDefault("disease_name", "Unknown");
+        String confidenceStr = body.get("confidence");
+        Double confidence = null;
+        if (confidenceStr != null) {
+            try { confidence = Double.parseDouble(confidenceStr); } catch (NumberFormatException ignored) {}
+        }
 
-        String answer = aiAdviceService.getAdvice(cropName, diseaseName);
-        return Map.of("answer", answer);
+        AdviceResponse adviceResponse = aiAdviceService.getAdvice(cropName, diseaseName, confidence);
+        return Map.of(
+                "prediction", diseaseName,
+                "confidence", confidence != null ? confidence : 0.0,
+                "advice", adviceResponse
+        );
     }
 
     /**

@@ -1,0 +1,49 @@
+## Crop
+Tomato
+
+## Disease type
+Fungal disease
+
+## Causal organism
+*Alternaria solani*
+
+## Key symptoms
+- Begins on **older lower leaves**.
+- Small dark spots enlarge into brown lesions with **concentric rings**.
+- Yellowing around spots is common.
+- Stem lesions may occur and can be elongated and dark.
+- Fruit near the stem end can develop dark, leathery lesions.
+
+## Favorable conditions
+- Warm temperatures
+- Humidity, dew, rain splash, overhead irrigation
+- Plant stress and older foliage
+
+## Disease spread
+- Survives in debris, stakes, volunteers, and related hosts.
+- Spread by wind, splash, tools, and workers.
+
+## Impact
+- Progressive defoliation
+- Fruit sunscald and reduced yield
+
+## Management
+- Rotate crops and remove old debris.
+- Mulch or reduce soil splash.
+- Stake/prune to improve airflow if system allows.
+- Water at the base rather than over the canopy where practical.
+- Use protectant fungicides where locally recommended.
+
+## When to escalate
+- Disease moving rapidly upward through the canopy
+- Fruit lesions becoming common
+- Unclear distinction from target spot or late blight
+
+## Farmer-facing explanation
+Tomato early blight usually starts low on the plant and creates brown spots with ring patterns. Keeping leaves dry, reducing splash, and controlling the disease early is important because once many leaves are lost, fruit quality and yield decline.
+
+## Backend tags
+`tomato`, `fungal`, `early-blight`, `lower-leaves-first`, `target-rings`
+
+## Source anchors
+UMN Extension: Early blight in tomato and potato; UMN tomato leaf spot diseases.

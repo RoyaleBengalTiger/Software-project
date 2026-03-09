@@ -1,0 +1,69 @@
+## Confidence interpretation
+### High confidence
+- Good for first-pass advice.
+- Still recommend field verification for severe outbreaks.
+
+### Medium confidence
+- Give diagnosis plus 1–2 close look-alikes.
+- Encourage additional photos and symptom checks.
+
+### Low confidence
+- Avoid strong treatment claims.
+- Ask for more images and field context.
+- Recommend expert review if the crop is economically important.
+
+## Useful follow-up questions for your AI assistant
+1. Which part of the plant is affected first: lower leaves, new leaves, stems, fruit, or whole plant?
+2. Did symptoms appear after rain, cloudy weather, or hot dry weather?
+3. Are nearby plants showing the same pattern?
+4. Are insects or whiteflies visible?
+5. Was there recent fertilizer stress, pesticide spray, or water stress?
+6. Is the crop in greenhouse, tunnel, or open field?
+7. Is the farmer seeing webbing, fuzzy growth, bacterial ooze, or ring patterns?
+
+## Escalation rules for your platform
+Automatically suggest officer review when:
+- late blight is predicted
+- viral disease is predicted in nursery or early crop stage
+- confidence is low but spread is rapid
+- multiple nearby issues share the same severe disease
+- fruit/tuber infection is reported
+- grower reports major spread after storms
+
+## Suggested JSON structure for retrieval
+```json
+{
+  "class_name": "Tomato___Late_blight",
+  "crop": "Tomato",
+  "problem_type": "oomycete",
+  "causal_agent": "Phytophthora infestans",
+  "summary": "Fast-moving destructive blight favored by cool wet weather.",
+  "key_symptoms": [
+    "large greasy brown lesions",
+    "white growth on leaf underside in humid weather",
+    "stem collapse",
+    "firm brown fruit lesions"
+  ],
+  "favorable_conditions": [
+    "cool weather",
+    "high humidity",
+    "leaf wetness"
+  ],
+  "immediate_actions": [
+    "treat as urgent",
+    "avoid moving through wet plants",
+    "separate suspect area"
+  ],
+  "management": [
+    "destroy volunteer hosts",
+    "rapid scouting",
+    "locally recommended fungicide program"
+  ],
+  "when_to_escalate": [
+    "suspected late blight should be escalated quickly"
+  ],
+  "look_alikes": [
+    "early blight"
+  ]
+}
+```

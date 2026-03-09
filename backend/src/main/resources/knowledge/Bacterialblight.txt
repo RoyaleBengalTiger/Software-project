@@ -1,0 +1,85 @@
+## Crop
+Rice
+
+## Disease type
+Bacterial disease
+
+## Causal organism
+*Xanthomonas oryzae* pv. *oryzae*
+
+## Why it matters
+Bacterial blight is one of the most destructive rice diseases in Asia and can cause serious yield loss when infection starts early and spreads under favorable conditions.
+
+## Key symptoms
+### Seedling stage
+- Seedlings may wilt rapidly and dry up; this severe phase is often called **kresek**.
+- Leaves can appear gray-green before collapsing.
+
+### Vegetative to reproductive stage
+- Lesions usually begin near the **leaf tip or leaf margin**.
+- Early lesions are water-soaked, then turn yellow to straw-colored.
+- Long blighted streaks extend downward along the leaf blade.
+- In humid conditions, bacterial ooze may appear as tiny yellowish beads.
+- Severely affected leaves dry out and the canopy can look scorched.
+
+## Disease spread and survival
+- The bacterium survives on infected crop residues, volunteer rice, and some weed hosts.
+- It can spread through rain splash, irrigation water, wind-driven rain, contaminated tools, and infected planting material.
+- Wounds created by storms, leaf clipping, insects, or rough handling favor infection.
+
+## Favorable conditions
+- Frequent rain and strong winds
+- Flooded or poorly drained fields
+- High nitrogen, especially excessive or late nitrogen
+- Dense planting and prolonged leaf wetness
+- Warm weather typical of rice-growing seasons
+
+## Look-alikes / confusion points
+- Nutrient burn and drought scorch can also start from leaf tips, but bacterial blight typically forms expanding blighted streaks and can spread quickly through a field.
+- Bacterial leaf streak is usually narrower and more translucent between veins.
+
+## Impact
+- Early severe infection can reduce tillering and weaken crop growth.
+- Infection during reproductive stages reduces grain filling and overall yield.
+- Damage is often worse where susceptible varieties are planted across large areas.
+
+## Immediate field actions
+- Mark hotspots and monitor neighboring plants.
+- Avoid moving workers or equipment from diseased to healthy wet fields without cleaning.
+- Stop unnecessary leaf clipping or rough handling.
+- Avoid excess nitrogen topdressing in affected zones.
+- Improve water movement and drainage where possible.
+
+## Integrated management
+### Resistant varieties
+- Prefer locally recommended resistant or tolerant rice varieties whenever available.
+- Resistance is one of the most effective management tools for bacterial blight.
+
+### Crop and field hygiene
+- Remove volunteer rice and manage grassy weeds that can help the disease persist.
+- Plow down or properly decompose infected stubble after harvest.
+- Use clean seed and healthy nursery stock.
+
+### Nutrient and water management
+- Avoid excessive nitrogen.
+- Maintain balanced fertilization, especially potassium where recommended locally.
+- Reduce prolonged stagnant conditions when practical.
+
+### Chemical management
+- Antibiotic use is generally not a dependable long-term strategy and may not be recommended or legal in many places.
+- If a local agricultural authority recommends a bactericide, follow **local label and regulatory guidance only**.
+
+## When to escalate
+- Rapid spread after storms or heavy rain
+- Large affected patches in nursery or early crop stages
+- Repeated outbreaks in the same area
+- Field symptoms inconsistent with the classifier result
+
+## Farmer-facing explanation
+Bacterial blight usually starts from the leaf tip or edge and moves downward as yellow to straw-colored drying. It spreads faster in wet, windy conditions and where too much nitrogen is used. The best control is resistant variety choice, clean field practice, and avoiding excess nitrogen.
+
+## Backend tags
+`rice`, `bacterial`, `leaf-blight`, `water-splash`, `high-risk-after-storm`
+
+## Source anchors
+IRRI Rice Knowledge Bank: Bacterial blight; Rice Diseases Online Resource (IRRI); APS Common Names of Plant Diseases—Rice.

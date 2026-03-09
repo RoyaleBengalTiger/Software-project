@@ -1,0 +1,62 @@
+## Crop
+Tomato
+
+## Disease type
+Viral disease
+
+## Main viruses relevant to this class
+Tomato mosaic virus (ToMV) and closely related tobacco mosaic-type viruses are often discussed together because symptoms and spread patterns overlap.
+
+## Why it matters
+Mosaic viruses are persistent, mechanically transmissible, and have no cure once plants are infected. Management depends heavily on prevention and sanitation.
+
+## Key symptoms
+- Mottled light and dark green mosaic on leaves
+- Leaf distortion, narrowing, or fern-like / shoestring symptoms in some conditions
+- Plant stunting
+- Fruit discoloration, uneven ripening, or necrotic patterns in some cases
+- Symptoms can vary by cultivar, strain, temperature, and mixed infections
+
+## Spread and survival
+- Mechanical transmission is very important.
+- Virus can spread on hands, tools, stakes, clothing, and plant-to-plant contact.
+- Some mosaic viruses persist in plant debris or contaminated materials.
+
+## Favorable conditions for spread
+- Frequent handling, pruning, tying, transplanting
+- Greenhouse or high-touch production systems
+- Infected transplants or contaminated tools
+
+## Look-alikes
+- Herbicide injury and nutrient disorders may distort leaves.
+- Other tomato viruses can cause overlapping symptoms; lab confirmation is often needed.
+
+## Impact
+- Stunting and reduced fruit quality
+- Difficult to stop once it spreads through a planting
+
+## Immediate actions
+- Isolate suspect plants.
+- Wash hands and disinfect tools after contact.
+- Avoid handling healthy plants after infected ones.
+- Rogue severely affected plants where appropriate.
+
+## Integrated management
+- Use resistant varieties where available.
+- Start with clean seed/transplants.
+- Enforce sanitation for tools, hands, benches, and worker movement.
+- Control weeds and alternate hosts around the production area.
+
+## When to escalate
+- Multiple plants with mosaic and distortion
+- Suspected virus spread in greenhouse or nursery
+- Need to distinguish from TYLCV, CMV, herbicide injury, or nutrient stress
+
+## Farmer-facing explanation
+Tomato mosaic virus usually causes mottled leaves and leaf distortion. There is no cure after infection, so preventing spread is the main strategy. Clean handling, tool disinfection, and removing badly affected plants are important.
+
+## Backend tags
+`tomato`, `virus`, `mosaic`, `mechanical-spread`, `sanitation-critical`
+
+## Source anchors
+UMN Extension: Tomato viruses; UC IPM: Tobacco mosaic / tomato.

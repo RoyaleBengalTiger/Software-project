@@ -1,0 +1,55 @@
+## Crop
+Tomato
+
+## Disease type
+Fungal disease
+
+## Causal organism
+*Septoria lycopersici*
+
+## Why it matters
+Septoria leaf spot is one of the most common defoliating diseases of tomato in wet seasons. It often begins on lower leaves and can move upward quickly.
+
+## Key symptoms
+- Many small circular spots on older lower leaves.
+- Spots often have tan to gray centers with dark brown margins.
+- Tiny black specks (**pycnidia**) can often be seen in lesion centers.
+- Surrounding tissue may yellow.
+- Severe infection causes heavy defoliation from the bottom upward.
+
+## Favorable conditions
+- Moderate temperatures
+- Frequent rainfall, dew, irrigation splash
+- Dense canopy and poor airflow
+
+## Disease spread and survival
+- Survives on crop residues, stakes, cages, volunteer plants, and solanaceous weeds.
+- Spread by rain splash, irrigation, workers, and tools.
+
+## Look-alikes
+- Bacterial spot lesions are darker and more water-soaked early on.
+- Early blight lesions are larger and more likely to show concentric rings.
+
+## Impact
+- Heavy leaf loss reduces fruit size and exposes fruit to sunscald.
+
+## Management
+- Remove lower infected leaves where feasible.
+- Mulch to reduce soil splash.
+- Rotate away from tomato.
+- Clean stakes/cages and destroy residues.
+- Use protectant fungicides where recommended.
+
+## When to escalate
+- Fast bottom-up defoliation
+- Disease moving despite sanitation and fungicide program
+- Need to distinguish from bacterial spot or early blight
+
+## Farmer-facing explanation
+Septoria makes many small spots and often causes tomato plants to lose lower leaves first. Once defoliation starts, fruit can suffer from sun exposure. Sanitation, splash reduction, and early management are critical.
+
+## Backend tags
+`tomato`, `septoria`, `small-many-spots`, `bottom-up-defoliation`
+
+## Source anchors
+NC State Extension: Septoria Leaf Spot of Tomato; UMN tomato leaf spot diseases.

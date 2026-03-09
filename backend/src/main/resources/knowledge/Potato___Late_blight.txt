@@ -1,0 +1,74 @@
+## Crop
+Potato
+
+## Disease type
+Oomycete disease (water mold)
+
+## Causal organism
+*Phytophthora infestans*
+
+## Why it matters
+Late blight is one of the most destructive diseases of potato and tomato. Under cool, wet conditions it can spread explosively and cause severe crop loss.
+
+## Key symptoms
+### Leaves and stems
+- Large, irregular, olive-green to brown water-soaked lesions.
+- Lesions are not neatly restricted by veins.
+- In humid conditions, **white fuzzy sporulation** may appear near lesion edges, especially on leaf undersides.
+- Leaves, petioles, and stems can rapidly collapse.
+
+### Tubers
+- Irregular sunken brown to purplish lesions around eyes or on the surface.
+- Internal reddish-brown granular rot may develop.
+
+## Disease spread and survival
+- Sporangia spread by wind and rain over long distances.
+- The pathogen survives in infected seed tubers, cull piles, volunteers, and living host tissue.
+- Wet conditions strongly favor infection and repeated cycles.
+
+## Favorable conditions
+- Cool, wet weather
+- Prolonged leaf wetness, fog, dew, and rain
+- Dense canopies and poor ventilation
+
+## Look-alikes
+- Early blight usually has clearer target-like rings and tends to be more associated with warm weather.
+- Frost injury can blacken tissue quickly but does not produce white sporulation.
+
+## Impact
+- Rapid field-wide collapse possible
+- Tuber infection threatens storage losses
+- Requires fast action when confirmed or strongly suspected
+
+## Immediate field actions
+- Treat as urgent.
+- Separate suspect areas and minimize movement through wet foliage.
+- Destroy cull piles and volunteer potatoes if present.
+- Do not store visibly infected tubers.
+
+## Integrated management
+### Exclusion and sanitation
+- Use clean seed tubers.
+- Destroy volunteers and cull piles.
+
+### Scouting and rapid response
+- Scout frequently during cool, wet periods.
+- Confirm quickly if symptoms are suspicious.
+
+### Fungicide programs
+- Preventive fungicide programs are critical in regions and seasons with late blight risk.
+- Curative expectations are limited once disease is established.
+- Follow local recommendations closely.
+
+## When to escalate
+- Always escalate suspected late blight quickly.
+- Escalate immediately if white sporulation, stem collapse, or tuber symptoms are present.
+
+## Farmer-facing explanation
+Late blight is an emergency-type disease in potato. It spreads fastest in cool, wet weather and can destroy foliage quickly. The most urgent actions are quick confirmation, sanitation, and rapid locally recommended fungicide protection if available.
+
+## Backend tags
+`potato`, `late-blight`, `high-priority`, `cool-wet-weather`, `storage-risk`
+
+## Source anchors
+UMN Extension: Late blight of tomato and potato; UMN potato diagnostic guide.
