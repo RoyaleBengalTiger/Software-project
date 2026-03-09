@@ -32,7 +32,7 @@ const DashboardPage = () => {
     { to: "/ml/disease", icon: Bug, label: "Disease Detection", desc: "AI-powered crop analysis", color: "text-emerald-600 bg-emerald-500/10" },
     { to: "/forum", icon: MessageSquare, label: "Community Forum", desc: "Ask & share knowledge", color: "text-blue-600 bg-blue-500/10" },
     { to: "/map", icon: MapPin, label: "Officer Map", desc: "Find nearby officers", color: "text-amber-600 bg-amber-500/10" },
-    { to: "/requests", icon: Sparkles, label: "My Requests", desc: "Track your cases", color: "text-purple-600 bg-purple-500/10" },
+    { to: "/issues", icon: Sparkles, label: "My Issues", desc: "Track your cases", color: "text-purple-600 bg-purple-500/10" },
   ];
 
   return (

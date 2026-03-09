@@ -5,6 +5,6 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class SendUserRequestMessageRequest {
-    private String message;
+public class ForwardIssueRequest {
+    private String toOfficerUsername;
 }

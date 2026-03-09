@@ -1,48 +1,44 @@
 package com.example.agriverse.controller;
 
+import com.example.agriverse.dto.CreateIssueRequest;
+import com.example.agriverse.dto.IssueResponse;
 import com.example.agriverse.dto.ml.MlPredictionResponse;
 import com.example.agriverse.service.MlPredictionService;
-import com.example.agriverse.service.UserRequestService;
+import com.example.agriverse.service.IssueService;
 
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
 import com.example.agriverse.dto.ml.PredictAndCreateResponse;
-import com.example.agriverse.service.MlRequestWorkflowService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import com.example.agriverse.service.AiAdviceService;
-import com.example.agriverse.dto.UserRequestResponse;
 
 @RestController
 @RequestMapping("/api/ml")
 @RequiredArgsConstructor
 public class MlWorkflowController {
-    private final UserRequestService userRequestService;
-    private final MlRequestWorkflowService workflow;
     private final MlPredictionService mlPredictionService;
     private final AiAdviceService aiAdviceService;
+    private final IssueService issueService;
 
     /**
      * POST /api/ml/predict
      * Sends image(s) to Python ML service and returns prediction results.
-     * Returns: best prediction + all per-image predictions.
      */
     @PostMapping(value = "/predict", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public PredictAndCreateResponse predict(
             @RequestPart("image") List<MultipartFile> images) {
         List<MlPredictionResponse> allPredictions = mlPredictionService.predictAll(images);
 
-        // Best prediction: is_leaf == true, highest confidence
         MlPredictionResponse best = allPredictions.stream()
                 .filter(p -> p.error == null && p.is_leaf != null && p.is_leaf)
                 .max(Comparator.comparingDouble(p -> p.confidence != null ? p.confidence : -1.0))
                 .orElse(null);
 
-        // If no leaf prediction, show first non-error result
         if (best == null) {
             best = allPredictions.stream()
                     .filter(p -> p.error == null)
@@ -54,23 +50,7 @@ public class MlWorkflowController {
                 .prediction(best)
                 .allPredictions(allPredictions)
                 .advice(null)
-                .request(null)
-                .requestTopic(null)
                 .build();
-    }
-
-    /**
-     * POST /api/ml/predict-and-create
-     * Predicts disease from image(s), then (if leaf detected) creates a
-     * UserRequest.
-     * Crop is extracted from the prediction "crop___disease" format.
-     */
-    @PostMapping(value = "/predict-and-create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public PredictAndCreateResponse predictAndCreate(
-            @RequestPart("image") List<MultipartFile> images,
-            @RequestPart(value = "state", required = false) String state,
-            @RequestPart(value = "district", required = false) String district) {
-        return workflow.predictAndCreate(images, state, district);
     }
 
     @PostMapping("/advice")
@@ -83,28 +63,34 @@ public class MlWorkflowController {
     }
 
     /**
-     * POST /api/ml/forward
-     * Forward a disease detection result to a Govt Officer.
-     * forwardMode: "POOL" (default) or "NEAREST" (nearest officer by location)
+     * POST /api/ml/create-issue
+     * Creates an Issue from a disease detection result.
+     * Replaces the old /api/ml/forward endpoint for the new Issue-first workflow.
      */
-    @PostMapping(value = "/forward", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public UserRequestResponse forwardToGovtOfficer(
-            @RequestPart("crop") String crop,
-            @RequestPart("diseaseName") String diseaseName,
-            @RequestPart("advice") String advice,
-            @RequestPart("image") List<MultipartFile> images,
-            @RequestPart(value = "state", required = false) String state,
-            @RequestPart(value = "district", required = false) String district,
-            @RequestPart(value = "forwardMode", required = false) String forwardMode) {
-        String category = crop + " • " + diseaseName;
-        String description = diseaseName + "\n\n" + advice;
+    @PostMapping(value = "/create-issue", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public IssueResponse createIssueFromPrediction(
+            @RequestPart("predictedDisease") String predictedDisease,
+            @RequestPart(value = "cropName", required = false) String cropName,
+            @RequestPart(value = "confidence", required = false) String confidence,
+            @RequestPart(value = "note", required = false) String note,
+            @RequestPart("latitude") String latitude,
+            @RequestPart("longitude") String longitude,
+            @RequestPart(value = "locationText", required = false) String locationText,
+            @RequestPart(value = "forwardMode", required = false) String forwardMode,
+            @RequestPart(value = "image", required = false) List<MultipartFile> images) {
 
-        if ("NEAREST".equalsIgnoreCase(forwardMode)) {
-            return userRequestService.createRequestForNearestOfficer(
-                    category, description, state, district, images);
+        CreateIssueRequest req = new CreateIssueRequest();
+        req.setPredictedDisease(predictedDisease);
+        req.setCropName(cropName);
+        req.setConfidence(confidence != null ? Double.parseDouble(confidence) : null);
+        req.setNote(note);
+        req.setLatitude(Double.parseDouble(latitude));
+        req.setLongitude(Double.parseDouble(longitude));
+        req.setLocationText(locationText);
+
+        if ("nearest".equalsIgnoreCase(forwardMode)) {
+            return issueService.createIssueForNearestOfficer(req, images);
         }
-
-        // Default: pool mode (OPEN, unassigned)
-        return userRequestService.createRequestWithPhoto(category, description, state, district, images);
+        return issueService.createIssue(req, images);
     }
 }

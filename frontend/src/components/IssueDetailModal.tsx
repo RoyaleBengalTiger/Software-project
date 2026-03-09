@@ -1,0 +1,449 @@
+import { useEffect, useState, useCallback } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { issuesApi, Issue } from "@/api/issues";
+import { buildFileUrl } from "@/api/util";
+import { useToast } from "@/hooks/use-toast";
+import { Link } from "react-router-dom";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import {
+  MapPin,
+  User,
+  Calendar,
+  Leaf,
+  ArrowRightLeft,
+  CheckCircle2,
+  MessageSquare,
+  Loader2,
+  Image as ImageIcon,
+  Shield,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
+
+const STATUS_CONFIG: Record<
+  string,
+  { label: string; color: string; bg: string }
+> = {
+  NEW: { label: "New", color: "text-blue-700", bg: "bg-blue-100 border-blue-300" },
+  UNDER_REVIEW: { label: "Under Review", color: "text-amber-700", bg: "bg-amber-100 border-amber-300" },
+  GROUPED_IN_CHAT: { label: "In Chat", color: "text-green-700", bg: "bg-green-100 border-green-300" },
+  RESOLVED: { label: "Resolved", color: "text-emerald-700", bg: "bg-emerald-100 border-emerald-300" },
+  CLOSED: { label: "Closed", color: "text-gray-700", bg: "bg-gray-100 border-gray-300" },
+};
+
+interface IssueDetailModalProps {
+  issueId: number | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onIssueUpdated?: () => void;
+}
+
+export default function IssueDetailModal({
+  issueId,
+  open,
+  onOpenChange,
+  onIssueUpdated,
+}: IssueDetailModalProps) {
+  const { user, isGovtOfficer, isAdmin } = useAuth();
+  const { toast } = useToast();
+  const [issue, setIssue] = useState<Issue | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [showForwardUI, setShowForwardUI] = useState(false);
+  const [officers, setOfficers] = useState<{ username: string; identificationNumber?: string | null }[]>([]);
+  const [targetOfficer, setTargetOfficer] = useState("");
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+
+  const fetchIssue = useCallback(async () => {
+    if (!issueId) return;
+    setLoading(true);
+    try {
+      const data = await issuesApi.getById(issueId);
+      setIssue(data);
+    } catch {
+      toast({ title: "Error", description: "Failed to load issue details", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  }, [issueId, toast]);
+
+  useEffect(() => {
+    if (open && issueId) {
+      fetchIssue();
+      setShowForwardUI(false);
+      setTargetOfficer("");
+      setPreviewImage(null);
+    }
+    if (!open) {
+      setIssue(null);
+    }
+  }, [open, issueId, fetchIssue]);
+
+  const handleAccept = async () => {
+    if (!issue) return;
+    setActionLoading(true);
+    try {
+      await issuesApi.assignToSelf(issue.id);
+      toast({ title: "Issue Accepted", description: `You are now assigned to issue #${issue.id}` });
+      onIssueUpdated?.();
+      await fetchIssue();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to accept issue";
+      toast({ title: "Error", description: msg, variant: "destructive" });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleShowForward = async () => {
+    setShowForwardUI(true);
+    try {
+      const list = await issuesApi.listGovtOfficers();
+      setOfficers(list);
+    } catch {
+      toast({ title: "Error", description: "Failed to load officers", variant: "destructive" });
+    }
+  };
+
+  const handleForward = async () => {
+    if (!issue || !targetOfficer) return;
+    setActionLoading(true);
+    try {
+      await issuesApi.forward(issue.id, targetOfficer);
+      toast({ title: "Issue Forwarded", description: `Forwarded to ${targetOfficer}` });
+      onIssueUpdated?.();
+      setShowForwardUI(false);
+      setTargetOfficer("");
+      await fetchIssue();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to forward issue";
+      toast({ title: "Error", description: msg, variant: "destructive" });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const formatDate = (d?: string | null) => {
+    if (!d) return "—";
+    return new Date(d).toLocaleString();
+  };
+
+  const statusCfg = issue ? STATUS_CONFIG[issue.status] || STATUS_CONFIG.NEW : STATUS_CONFIG.NEW;
+  const isAssignedToMe = issue?.assignedOfficerUsername === user?.username;
+  const canAccept = (isGovtOfficer || isAdmin) && issue && !issue.assignedOfficerUsername;
+  const canForward = (isGovtOfficer || isAdmin) && issue && isAssignedToMe;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] p-0 gap-0">
+        {loading || !issue ? (
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <>
+            {/* Header */}
+            <DialogHeader className="px-6 pt-6 pb-3">
+              <div className="flex items-center gap-3">
+                <DialogTitle className="text-lg font-semibold">
+                  Issue #{issue.id}
+                </DialogTitle>
+                <Badge variant="outline" className={`${statusCfg.bg} ${statusCfg.color} border text-xs`}>
+                  {statusCfg.label}
+                </Badge>
+              </div>
+              <p className="text-base font-medium text-foreground mt-1">
+                {issue.reviewedDisease || issue.predictedDisease}
+              </p>
+            </DialogHeader>
+
+            <Separator />
+
+            <ScrollArea className="max-h-[60vh] px-6 py-4">
+              <div className="space-y-5">
+                {/* Images */}
+                {issue.imageUrls && issue.imageUrls.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
+                      <ImageIcon className="h-3.5 w-3.5" /> Photos ({issue.imageUrls.length})
+                    </h4>
+                    {previewImage ? (
+                      <div className="relative">
+                        <img
+                          src={buildFileUrl(previewImage) ?? ""}
+                          alt="Issue"
+                          className="w-full max-h-64 object-contain rounded-lg border bg-muted"
+                        />
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="absolute top-2 right-2"
+                          onClick={() => setPreviewImage(null)}
+                        >
+                          Close
+                        </Button>
+                        <div className="flex justify-center gap-2 mt-2">
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            className="h-7 w-7"
+                            onClick={() => {
+                              const idx = issue.imageUrls!.indexOf(previewImage);
+                              if (idx > 0) setPreviewImage(issue.imageUrls![idx - 1]);
+                            }}
+                            disabled={issue.imageUrls!.indexOf(previewImage) === 0}
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            className="h-7 w-7"
+                            onClick={() => {
+                              const idx = issue.imageUrls!.indexOf(previewImage);
+                              if (idx < issue.imageUrls!.length - 1) setPreviewImage(issue.imageUrls![idx + 1]);
+                            }}
+                            disabled={issue.imageUrls!.indexOf(previewImage) === issue.imageUrls!.length - 1}
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex gap-2 overflow-x-auto pb-1">
+                        {issue.imageUrls.map((url, i) => (
+                          <img
+                            key={i}
+                            src={buildFileUrl(url) ?? ""}
+                            alt={`Issue #${issue.id} photo ${i + 1}`}
+                            className="h-20 w-20 object-cover rounded-md border cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all flex-shrink-0"
+                            onClick={() => setPreviewImage(url)}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Disease Info */}
+                <div>
+                  <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
+                    <Leaf className="h-3.5 w-3.5" /> Disease Info
+                  </h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-2.5 rounded-md bg-muted/50 border">
+                      <p className="text-xs text-muted-foreground">Predicted Disease</p>
+                      <p className="text-sm font-medium">{issue.predictedDisease}</p>
+                    </div>
+                    {issue.reviewedDisease && (
+                      <div className="p-2.5 rounded-md bg-muted/50 border">
+                        <p className="text-xs text-muted-foreground">Reviewed Disease</p>
+                        <p className="text-sm font-medium">{issue.reviewedDisease}</p>
+                      </div>
+                    )}
+                    {issue.confidence != null && (
+                      <div className="p-2.5 rounded-md bg-muted/50 border">
+                        <p className="text-xs text-muted-foreground">Confidence</p>
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-primary rounded-full"
+                              style={{ width: `${Math.round(issue.confidence * 100)}%` }}
+                            />
+                          </div>
+                          <span className="text-sm font-medium">
+                            {Math.round(issue.confidence * 100)}%
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                    {issue.cropName && (
+                      <div className="p-2.5 rounded-md bg-muted/50 border">
+                        <p className="text-xs text-muted-foreground">Crop</p>
+                        <p className="text-sm font-medium">{issue.cropName}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Location */}
+                <div>
+                  <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
+                    <MapPin className="h-3.5 w-3.5" /> Location
+                  </h4>
+                  <div className="p-2.5 rounded-md bg-muted/50 border">
+                    {issue.locationText && <p className="text-sm font-medium">{issue.locationText}</p>}
+                    <p className="text-xs text-muted-foreground">
+                      {issue.latitude.toFixed(5)}, {issue.longitude.toFixed(5)}
+                    </p>
+                    <Link
+                      to={`/map?lat=${issue.latitude}&lng=${issue.longitude}`}
+                      className="text-xs text-primary hover:underline mt-1 inline-block"
+                    >
+                      View on Map
+                    </Link>
+                  </div>
+                </div>
+
+                {/* People */}
+                <div>
+                  <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
+                    <User className="h-3.5 w-3.5" /> People
+                  </h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-2.5 rounded-md bg-muted/50 border">
+                      <p className="text-xs text-muted-foreground">Created by</p>
+                      <p className="text-sm font-medium">{issue.farmerUsername}</p>
+                    </div>
+                    <div className="p-2.5 rounded-md bg-muted/50 border">
+                      <p className="text-xs text-muted-foreground">Assigned Officer</p>
+                      <p className="text-sm font-medium">
+                        {issue.assignedOfficerUsername || (
+                          <span className="text-muted-foreground italic">Unassigned (Pool)</span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Note */}
+                {issue.note && (
+                  <div>
+                    <h4 className="text-sm font-medium text-muted-foreground mb-2">Note</h4>
+                    <div className="p-2.5 rounded-md bg-muted/50 border text-sm whitespace-pre-wrap max-h-32 overflow-y-auto">
+                      {issue.note}
+                    </div>
+                  </div>
+                )}
+
+                {/* Linked Chat */}
+                {issue.linkedChatId && (
+                  <div>
+                    <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
+                      <MessageSquare className="h-3.5 w-3.5" /> Linked Chat
+                    </h4>
+                    <Link
+                      to={`/chats/${issue.linkedChatId}`}
+                      className="flex items-center gap-2 p-2.5 rounded-md bg-green-50 border border-green-200 text-green-700 hover:bg-green-100 transition-colors text-sm font-medium"
+                      onClick={() => onOpenChange(false)}
+                    >
+                      <MessageSquare className="h-4 w-4" />
+                      {issue.linkedChatTitle || `Chat #${issue.linkedChatId}`}
+                    </Link>
+                  </div>
+                )}
+
+                {/* Timestamps */}
+                <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <Calendar className="h-3 w-3" /> Created: {formatDate(issue.createdAt)}
+                  </span>
+                  {issue.updatedAt && (
+                    <span className="flex items-center gap-1">
+                      <Calendar className="h-3 w-3" /> Updated: {formatDate(issue.updatedAt)}
+                    </span>
+                  )}
+                </div>
+
+                {/* Officer Actions */}
+                {(canAccept || canForward) && (
+                  <>
+                    <Separator />
+                    <div className="space-y-3">
+                      <h4 className="text-sm font-medium flex items-center gap-1.5">
+                        <Shield className="h-3.5 w-3.5" /> Officer Actions
+                      </h4>
+
+                      {canAccept && (
+                        <Button
+                          onClick={handleAccept}
+                          disabled={actionLoading}
+                          className="w-full"
+                        >
+                          {actionLoading ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <CheckCircle2 className="h-4 w-4 mr-2" />
+                          )}
+                          Accept Issue
+                        </Button>
+                      )}
+
+                      {canForward && !showForwardUI && (
+                        <Button
+                          variant="outline"
+                          onClick={handleShowForward}
+                          className="w-full"
+                        >
+                          <ArrowRightLeft className="h-4 w-4 mr-2" />
+                          Forward to Another Officer
+                        </Button>
+                      )}
+
+                      {showForwardUI && (
+                        <div className="space-y-2 p-3 rounded-lg border bg-muted/20">
+                          <label className="text-sm font-medium">Select Officer</label>
+                          <Select value={targetOfficer} onValueChange={setTargetOfficer}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Choose an officer..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {officers
+                                .filter((o) => o.username !== user?.username)
+                                .map((o) => (
+                                  <SelectItem key={o.username} value={o.username}>
+                                    {o.username}
+                                    {o.identificationNumber ? ` (${o.identificationNumber})` : ""}
+                                  </SelectItem>
+                                ))}
+                            </SelectContent>
+                          </Select>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              onClick={handleForward}
+                              disabled={!targetOfficer || actionLoading}
+                            >
+                              {actionLoading && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
+                              Confirm Forward
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setShowForwardUI(false);
+                                setTargetOfficer("");
+                              }}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            </ScrollArea>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}

@@ -12,10 +12,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const hideFooterRoutes = [
     "/profile",
     "/forum",
-    "/requests",
+    "/issues",
+    "/chats",
     "/ml/disease",
     "/map",
-    "/requests/", // safety for nested
   ];
 
   const hideFooter = hideFooterRoutes.some((path) =>

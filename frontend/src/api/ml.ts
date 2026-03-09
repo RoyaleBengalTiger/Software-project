@@ -32,49 +32,12 @@ export type MlPredictionResponse = {
   allPredictions?: MlPredictionResponse[];
 };
 
-export type PredictAndCreateResponse = {
-  prediction?: MlPredictionResponse;
-
-  /** Per-image breakdown if the main prediction is an aggregate */
-  allPredictions?: MlPredictionResponse[];
-
-  advice?: string | null;
-
-  // backend returns a request object (UserRequestResponse) — null when is_leaf is false
-  request?: {
-    id: number;
-    category?: string;
-    status?: string;
-    assignedOfficerUsername?: string | null;
-    createdAt?: string;
-    imageUrls?: string[]; // ✅ NEW
-    imageUrl?: string | null; // Keep for compat
-  } & Record<string, any> | null;
-};
-
 /** POST /api/ml/predict — multiple images supported */
 export async function mlPredict(images: Blob[]) {
   const form = new FormData();
   images.forEach((img) => form.append("image", img, "leaf.jpg"));
 
   const res = await apiClient.post<MlPredictionResponse>("/api/ml/predict", form, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
-  return res.data;
-}
-
-/** POST /api/ml/predict-and-create — multiple images + optional location */
-export async function mlPredictAndCreateRequest(
-  images: Blob[],
-  state?: string,
-  district?: string
-) {
-  const form = new FormData();
-  images.forEach((img) => form.append("image", img, "leaf.jpg"));
-  if (state) form.append("state", state);
-  if (district) form.append("district", district);
-
-  const res = await apiClient.post<PredictAndCreateResponse>("/api/ml/predict-and-create", form, {
     headers: { "Content-Type": "multipart/form-data" },
   });
   return res.data;
@@ -90,52 +53,4 @@ export async function mlAdvice(cropName: string, diseaseName: string) {
     }
   );
   return res.data;
-}
-
-/** POST /api/ml/forward (Pool mode — no forwardMode or forwardMode="POOL") */
-export async function mlForwardToGovtOfficer(
-  crop: string,
-  diseaseName: string,
-  advice: string,
-  images: Blob[],
-  state?: string,
-  district?: string
-) {
-  const form = new FormData();
-  form.append("crop", crop);
-  form.append("diseaseName", diseaseName);
-  form.append("advice", advice);
-  images.forEach((img) => form.append("image", img, "leaf.jpg"));
-  form.append("forwardMode", "POOL");
-  if (state) form.append("state", state);
-  if (district) form.append("district", district);
-
-  const res = await apiClient.post("/api/ml/forward", form, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
-  return res.data; // UserRequestResponse
-}
-
-/** POST /api/ml/forward (Nearest mode — forwardMode="NEAREST") */
-export async function mlForwardToNearestOfficer(
-  crop: string,
-  diseaseName: string,
-  advice: string,
-  images: Blob[],
-  state?: string,
-  district?: string
-) {
-  const form = new FormData();
-  form.append("crop", crop);
-  form.append("diseaseName", diseaseName);
-  form.append("advice", advice);
-  images.forEach((img) => form.append("image", img, "leaf.jpg"));
-  form.append("forwardMode", "NEAREST");
-  if (state) form.append("state", state);
-  if (district) form.append("district", district);
-
-  const res = await apiClient.post("/api/ml/forward", form, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
-  return res.data; // UserRequestResponse
 }

@@ -2,11 +2,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { Button } from '@/components/ui/button';
-import { Sun, Moon, Leaf, Menu, X, LogOut, Shield, Briefcase, MapPin } from 'lucide-react';
+import { Sun, Moon, Leaf, Menu, X, LogOut, Shield, MapPin, AlertCircle, MessageSquare } from 'lucide-react';
 import { useState } from 'react';
 
 const Navbar = () => {
-  const { isAuthenticated, isAdmin, isGovtOfficer, user, logout } = useAuth(); // ✅ add isGovtOfficer
+  const { isAuthenticated, isAdmin, isGovtOfficer, user, logout } = useAuth();
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -46,16 +46,23 @@ const Navbar = () => {
             Map
           </Link>
 
+          <Link
+            to="/issues"
+            className="text-foreground/80 hover:text-primary transition-colors flex items-center gap-1"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            <AlertCircle className="h-4 w-4" />
+            Issues
+          </Link>
 
-          {isAuthenticated && (
-            <Link
-              to="/requests"
-              className="text-foreground/80 hover:text-primary transition-colors"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Requests
-            </Link>
-          )}
+          <Link
+            to="/chats"
+            className="text-foreground/80 hover:text-primary transition-colors flex items-center gap-1"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            <MessageSquare className="h-4 w-4" />
+            Chats
+          </Link>
 
           {isAuthenticated && !isGovtOfficer && (
             <Link
@@ -66,7 +73,6 @@ const Navbar = () => {
               Disease Detection
             </Link>
           )}
-
 
           {isAdmin && (
             <Link
@@ -134,7 +140,6 @@ const Navbar = () => {
               variant="ghost"
               size="icon"
               onClick={() => {
-                // if system, flip based on current system preference
                 if (theme === "system") {
                   const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
                   setTheme(isDark ? "light" : "dark");

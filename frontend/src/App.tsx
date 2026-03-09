@@ -20,11 +20,12 @@ import UnauthorizedPage from "@/pages/UnauthorizedPage";
 import NotFoundPage from "@/pages/NotFoundPage";
 import GovtOfficerDashboardPage from "@/pages/GovtOfficerDashboardPage";
 import MapPage from "@/pages/MapPage";
-import CreateRequestPage from "@/pages/requests/CreateRequestPage";
-import RequestChatPage from "@/pages/requests/RequestChatPage";
-import RequestsPage from "@/pages/requests/RequestsPage";
 import DiseaseDetectionPage from "@/pages/ml/DiseaseDetectionPage";
 
+// Issue & Chat Pages
+import IssuesPage from "@/pages/issues/IssuesPage";
+import ChatRoomsPage from "@/pages/chats/ChatRoomsPage";
+import ChatRoomPage from "@/pages/chats/ChatRoomPage";
 
 // Forum Pages
 import ForumTopicsPage from "@/pages/forum/ForumTopicsPage";
@@ -32,7 +33,7 @@ import ForumTopicPostsPage from "@/pages/forum/ForumTopicPostsPage";
 import ForumPostPage from "@/pages/forum/ForumPostPage";
 import CreateForumPostPage from "@/pages/forum/CreateForumPostPage";
 
-// NEW Pages
+// Verification Pages
 import VerifyEmailPage from "@/pages/VerifyEmailPage";
 import ResendVerificationPage from "@/pages/ResendVerificationPage";
 import CheckEmailPage from "@/pages/CheckEmailPage";
@@ -54,7 +55,7 @@ const App = () => (
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
 
-                {/* NEW: email verification flow */}
+                {/* Email verification */}
                 <Route path="/verify-email" element={<VerifyEmailPage />} />
                 <Route path="/resend-verification" element={<ResendVerificationPage />} />
                 <Route path="/check-email" element={<CheckEmailPage />} />
@@ -90,7 +91,7 @@ const App = () => (
                   }
                 />
 
-                {/* Forum (Protected) */}
+                {/* Forum */}
                 <Route
                   path="/forum"
                   element={
@@ -142,34 +143,51 @@ const App = () => (
                   }
                 />
 
+                {/* Issues */}
                 <Route
-                  path="/requests/new"
+                  path="/issues"
                   element={
                     <ProtectedRoute>
-                      <CreateRequestPage />
+                      <IssuesPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/issues/:id"
+                  element={
+                    <ProtectedRoute>
+                      <IssuesPage />
                     </ProtectedRoute>
                   }
                 />
 
+                {/* Chat Rooms */}
                 <Route
-                  path="/requests/:id"
+                  path="/chats"
                   element={
                     <ProtectedRoute>
-                      <RequestChatPage />
+                      <ChatRoomsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/chats/:id"
+                  element={
+                    <ProtectedRoute>
+                      <ChatRoomPage />
                     </ProtectedRoute>
                   }
                 />
 
+                {/* ML Disease Detection */}
                 <Route
-                  path="/requests"
+                  path="/ml/disease"
                   element={
                     <ProtectedRoute>
-                      <RequestsPage />
+                      <DiseaseDetectionPage />
                     </ProtectedRoute>
                   }
                 />
-                <Route path="/ml/disease" element={<DiseaseDetectionPage />} />
-
 
                 {/* Catch-all */}
                 <Route path="*" element={<NotFoundPage />} />

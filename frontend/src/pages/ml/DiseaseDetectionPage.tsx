@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, memo } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import BackButton from "@/components/BackButton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,17 +13,13 @@ import {
 import {
   mlAdvice,
   mlPredict,
-  mlForwardToGovtOfficer,
-  mlForwardToNearestOfficer,
   MlPredictionResponse,
 } from "@/api/ml";
 
-import { mapApi, Officer } from "@/api/map";
+import { issuesApi } from "@/api/issues";
 import { useToast } from "@/hooks/use-toast";
 import {
   Loader2,
-  MapPin,
-  Users,
   Upload,
   Camera,
   Image as ImageIcon,
@@ -36,57 +32,23 @@ import {
   BarChart3,
   Leaf,
   XCircle,
-  Navigation,
   X,
   Trash2,
   Crop,
 } from "lucide-react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { AxiosError } from "axios";
-
-// ─── Leaflet ───
-import { MapContainer, TileLayer, Marker, CircleMarker, Popup } from "react-leaflet";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
 
 // ─── Cropper ───
 import Cropper from "react-cropper";
 import "cropperjs/dist/cropper.css";
-
-// Fix default Leaflet marker icons
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-});
-
-const officerIcon = new L.Icon({
-  iconUrl:
-    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-});
-
-const nearestIcon = new L.Icon({
-  iconUrl:
-    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-});
 
 // ─── Steps ───
 const STEPS = [
   { key: "upload", label: "Upload Images", icon: Upload },
   { key: "predict", label: "Predict", icon: Sparkles },
   { key: "advice", label: "Advice", icon: MessageSquare },
-  { key: "forward", label: "Forward", icon: Send },
+  { key: "forward", label: "Request Help", icon: Send },
 ] as const;
 
 type Step = (typeof STEPS)[number]["key"];
@@ -117,22 +79,6 @@ function parsePrediction(pred: any): { crop: string; disease: string } {
   return { crop: pred, disease: "—" };
 }
 
-/** Haversine distance in km */
-function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((lat1 * Math.PI) / 180) *
-    Math.cos((lat2 * Math.PI) / 180) *
-    Math.sin(dLon / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-function formatDist(km: number) {
-  return km < 1 ? `${(km * 1000).toFixed(0)} m` : `${km.toFixed(1)} km`;
-}
 
 /**
  * Compress an image File/Blob client-side.
@@ -219,185 +165,6 @@ function normalizePredictResponse(res: any): {
 }
 
 // ═══════════════════════════════════════════════════════
-// MiniMap shown inside the forward dialog
-// ═══════════════════════════════════════════════════════
-const OfficerMiniMap = memo(function OfficerMiniMap({ open }: { open: boolean }) {
-  const [officers, setOfficers] = useState<Officer[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [userPos, setUserPos] = useState<[number, number] | null>(null);
-  const [locLoading, setLocLoading] = useState(false);
-
-  const officersCacheRef = useRef<Officer[] | null>(null);
-
-  useEffect(() => {
-    if (!open) return;
-
-    if (officersCacheRef.current && officersCacheRef.current.length > 0) {
-      setOfficers(officersCacheRef.current);
-    } else {
-      setLoading(true);
-      mapApi
-        .getOfficers()
-        .then((data) => {
-          officersCacheRef.current = data;
-          setOfficers(data);
-        })
-        .catch(() => { })
-        .finally(() => setLoading(false));
-    }
-
-    if (navigator.geolocation) {
-      setLocLoading(true);
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setUserPos([pos.coords.latitude, pos.coords.longitude]);
-          setLocLoading(false);
-        },
-        () => {
-          setLocLoading(false);
-        },
-        { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 }
-      );
-    }
-  }, [open]);
-
-  const nearest = useMemo(() => {
-    if (!userPos || officers.length === 0) return null;
-    let best: (Officer & { dist: number }) | null = null;
-    for (const o of officers) {
-      const d = haversineKm(userPos[0], userPos[1], o.latitude, o.longitude);
-      if (!best || d < best.dist) best = { ...o, dist: d };
-    }
-    return best;
-  }, [officers, userPos]);
-
-  const center: [number, number] = useMemo(() => {
-    if (userPos) return userPos;
-    if (officers.length > 0) return [officers[0].latitude, officers[0].longitude];
-    return [23.8103, 90.4125];
-  }, [userPos, officers]);
-
-  const zoom = useMemo(() => {
-    if (nearest && userPos) {
-      if (nearest.dist < 5) return 13;
-      if (nearest.dist < 20) return 11;
-      if (nearest.dist < 50) return 10;
-      return 8;
-    }
-    return 8;
-  }, [nearest, userPos]);
-
-  if (!open) return null;
-
-  if (loading) {
-    return (
-      <div className="w-full h-44 rounded-lg bg-muted/50 flex items-center justify-center">
-        <Loader2 className="h-5 w-5 animate-spin text-primary" />
-        <span className="ml-2 text-sm text-muted-foreground">Loading map…</span>
-      </div>
-    );
-  }
-
-  if (officers.length === 0) {
-    return (
-      <div className="w-full h-32 rounded-lg bg-muted/30 flex items-center justify-center text-sm text-muted-foreground">
-        <MapPin className="h-4 w-4 mr-2 opacity-50" />
-        No officers with locations available
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-2">
-      <div className="w-full h-48 rounded-lg overflow-hidden border border-border/50 relative">
-        {locLoading && (
-          <div className="absolute top-2 left-2 z-[999] px-2 py-1 rounded bg-background/80 border border-border/50 text-[11px] text-muted-foreground flex items-center gap-1">
-            <Loader2 className="h-3 w-3 animate-spin" />
-            Getting your location…
-          </div>
-        )}
-
-        <MapContainer
-          center={center}
-          zoom={zoom}
-          className="h-full w-full"
-          zoomControl={false}
-          attributionControl={false}
-          scrollWheelZoom={false}
-          dragging={true}
-        >
-          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-          {userPos && (
-            <>
-              <CircleMarker
-                center={userPos}
-                radius={14}
-                pathOptions={{
-                  color: "#4285F4",
-                  fillColor: "#4285F4",
-                  fillOpacity: 0.15,
-                  weight: 1,
-                  opacity: 0.3,
-                }}
-              />
-              <CircleMarker
-                center={userPos}
-                radius={6}
-                pathOptions={{ color: "white", fillColor: "#4285F4", fillOpacity: 1, weight: 2 }}
-              >
-                <Popup>Your location</Popup>
-              </CircleMarker>
-            </>
-          )}
-          {officers.map((o) => (
-            <Marker
-              key={o.id}
-              position={[o.latitude, o.longitude]}
-              icon={nearest && o.id === nearest.id ? nearestIcon : officerIcon}
-            >
-              <Popup>
-                <strong>{o.username}</strong>
-                <br />
-                {o.email}
-                {nearest && o.id === nearest.id && userPos && (
-                  <>
-                    <br />
-                    <em>{formatDist(nearest.dist)} away</em>
-                  </>
-                )}
-              </Popup>
-            </Marker>
-          ))}
-        </MapContainer>
-      </div>
-
-      {nearest && (
-        <div className="flex items-center gap-3 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
-          <div className="h-9 w-9 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-600 text-sm font-bold shrink-0">
-            {nearest.username.charAt(0).toUpperCase()}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <p className="text-sm font-semibold truncate">{nearest.username}</p>
-              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 font-medium whitespace-nowrap">
-                Nearest
-              </span>
-            </div>
-            <p className="text-xs text-muted-foreground truncate">{nearest.email}</p>
-          </div>
-          <div className="text-right shrink-0">
-            <div className="flex items-center gap-1 text-xs font-medium text-emerald-600">
-              <Navigation className="h-3 w-3" />
-              {formatDist(nearest.dist)}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-});
-
-// ═══════════════════════════════════════════════════════
 // Main Page
 // ═══════════════════════════════════════════════════════
 export default function DiseaseDetectionPage() {
@@ -422,9 +189,10 @@ export default function DiseaseDetectionPage() {
   const [busyPredict, setBusyPredict] = useState(false);
   const [busyForward, setBusyForward] = useState(false);
   const [forwardDialogOpen, setForwardDialogOpen] = useState(false);
-  const [forwardingMode, setForwardingMode] = useState<"POOL" | "NEAREST" | null>(null);
   const [locationError, setLocationError] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [issueNote, setIssueNote] = useState("");
+  const [forwardMode, setForwardMode] = useState<"pool" | "nearest">("pool");
 
   // ─── Crop Dialog State ───
   const [cropIndex, setCropIndex] = useState<number | null>(null);
@@ -444,7 +212,7 @@ export default function DiseaseDetectionPage() {
 
   // ─── Current step ───
   const currentStep: Step = useMemo(() => {
-    if (adviceReady) return "forward";
+    if (prediction && adviceReady) return "forward";
     if (prediction) return "advice";
     if (files.length > 0) return "predict";
     return "upload";
@@ -463,9 +231,9 @@ export default function DiseaseDetectionPage() {
 
     setLocationError(false);
 
-    // Close forward UI if user changes files / resets
+    // Close create issue UI if user changes files / resets
     setForwardDialogOpen(false);
-    setForwardingMode(null);
+    setIssueNote("");
   }, []);
 
   const revokeAllPreviews = useCallback((urls: string[]) => {
@@ -639,12 +407,9 @@ export default function DiseaseDetectionPage() {
   const permissionToForward = useMemo(() => {
     return (
       files.length > 0 &&
-      !!prediction &&
-      isLeafDetected !== false &&
-      !prediction?.error &&
-      adviceReady
+      isLeafDetected !== false
     );
-  }, [files.length, prediction, isLeafDetected, adviceReady]);
+  }, [files.length, isLeafDetected]);
 
   const openForwardDialog = useCallback(() => {
     if (!permissionToForward) return;
@@ -652,64 +417,72 @@ export default function DiseaseDetectionPage() {
     setForwardDialogOpen(true);
   }, [permissionToForward]);
 
-  const doForward = useCallback(
-    async (mode: "POOL" | "NEAREST") => {
+  const doCreateIssue = useCallback(
+    async () => {
       if (!permissionToForward) return;
 
-      setForwardingMode(mode);
       setBusyForward(true);
       setLocationError(false);
 
       try {
-        let res: any;
-        if (mode === "NEAREST") {
-          res = await mlForwardToNearestOfficer(parsed.crop, parsed.disease, advice, files);
-        } else {
-          res = await mlForwardToGovtOfficer(parsed.crop, parsed.disease, advice, files);
+        // Get user location
+        let lat = 0;
+        let lng = 0;
+        try {
+          const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              enableHighAccuracy: true,
+              timeout: 10000,
+              maximumAge: 60000,
+            });
+          });
+          lat = pos.coords.latitude;
+          lng = pos.coords.longitude;
+        } catch {
+          setLocationError(true);
+          setBusyForward(false);
+          return;
         }
 
-        const id = res?.id;
+        const diseaseStr = parsed.disease !== "—" ? parsed.disease : "Unknown";
+        const cropStr = parsed.crop !== "—" ? parsed.crop : undefined;
+        const noteText = issueNote.trim() || (
+          prediction
+            ? `${parsed.crop} - ${diseaseStr}${adviceReady ? `\n\nAI Advice:\n${advice}` : ''}`
+            : issueNote.trim() || 'Disease detection - awaiting analysis'
+        );
 
-        if (mode === "NEAREST" && res?.forwardMode === "POOL") {
-          toast({
-            title: "Forwarded to Pool",
-            description: "No nearby officer found. Placed into the pool.",
-          });
-        } else {
-          toast({
-            title: "Forwarded Successfully ✅",
-            description:
-              mode === "NEAREST" ? "Sent to the nearest officer." : "Placed in the officer pool.",
-          });
-        }
+        const res = await issuesApi.createFromMl({
+          predictedDisease: diseaseStr,
+          cropName: cropStr,
+          confidence: prediction?.confidence ?? undefined,
+          note: noteText,
+          latitude: lat,
+          longitude: lng,
+          forwardMode,
+          images: files,
+        });
+
+        toast({
+          title: "Issue Created",
+          description: forwardMode === "nearest"
+            ? "Your issue has been assigned to the nearest officer."
+            : "Your issue has been submitted to the officer pool.",
+        });
 
         setForwardDialogOpen(false);
-        if (id) navigate(`/requests/${id}`);
+        if (res?.id) navigate(`/issues/${res.id}`);
       } catch (error) {
         const axiosErr = error as AxiosError<any>;
         const data = axiosErr.response?.data;
-        const status = axiosErr.response?.status;
         const msg =
-          typeof data === "string" ? data : data?.message || data?.error || "Forward failed";
-
-        const isLocationErr =
-          (status === 400 || status === 422) &&
-          typeof msg === "string" &&
-          (msg.toLowerCase().includes("location") ||
-            msg.toLowerCase().includes("latitude") ||
-            msg.toLowerCase().includes("no officers"));
-
-        if (isLocationErr) {
-          setLocationError(true);
-        } else {
-          toast({ title: "Forward Failed", description: msg, variant: "destructive" });
-        }
+          typeof data === "string" ? data : data?.message || data?.error || "Failed to create issue";
+        toast({ title: "Failed", description: msg, variant: "destructive" });
       } finally {
         setBusyForward(false);
-        setForwardingMode(null);
       }
     },
-    [permissionToForward, parsed.crop, parsed.disease, advice, files, toast, navigate]
+    [permissionToForward, parsed.crop, parsed.disease, advice, adviceReady, files, toast, navigate, prediction, issueNote, forwardMode]
   );
 
   // ─── Render ───
@@ -1115,20 +888,20 @@ export default function DiseaseDetectionPage() {
               </Card>
             )}
 
-            {/* Forward Action */}
+            {/* Create Issue Action */}
             {permissionToForward && (
               <Card className="border-primary/30 bg-primary/5 overflow-hidden animate-in slide-in-from-bottom-4 duration-500">
                 <CardContent className="p-5 space-y-3">
                   <div className="flex items-center gap-2">
                     <Send className="h-4 w-4 text-primary" />
-                    <h3 className="text-sm font-semibold">Ready to Forward</h3>
+                    <h3 className="text-sm font-semibold">Ready to Request Help</h3>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Send this report (including all images) to a government agricultural officer.
+                    Create a support issue for government agricultural officers to review and assist you.
                   </p>
                   <Button className="w-full gap-2 h-11" onClick={openForwardDialog}>
                     <Send className="h-4 w-4" />
-                    Forward to Govt Officer
+                    Request Govt Help
                     <ChevronRight className="h-4 w-4 ml-auto" />
                   </Button>
                 </CardContent>
@@ -1187,7 +960,7 @@ export default function DiseaseDetectionPage() {
         </DialogContent>
       </Dialog>
 
-      {/* ═══ Forward Mode Dialog with Mini Map ═══ */}
+      {/* ═══ Create Issue Dialog ═══ */}
       <Dialog
         open={forwardDialogOpen}
         onOpenChange={(open) => {
@@ -1196,74 +969,103 @@ export default function DiseaseDetectionPage() {
       >
         <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Forward to Govt Officer</DialogTitle>
-            <DialogDescription>Choose how you'd like to forward your disease report.</DialogDescription>
+            <DialogTitle>Request Government Help</DialogTitle>
+            <DialogDescription>Create a support issue from your disease detection for an officer to review.</DialogDescription>
           </DialogHeader>
 
-          <OfficerMiniMap open={forwardDialogOpen} />
+          <div className="space-y-4 py-2">
+            {prediction ? (
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                <div className="flex-1">
+                  <p className="text-sm font-semibold">{parsed.crop} — {parsed.disease}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Confidence: {pct(prediction?.confidence)}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
+                <p className="text-sm text-amber-700 dark:text-amber-400">
+                  No prediction run yet — the officer will review your images directly.
+                </p>
+              </div>
+            )}
 
-          {locationError ? (
-            <div className="space-y-4 py-2">
+            {/* Forward Mode Selection */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Forward To</label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setForwardMode("pool")}
+                  className={`p-3 rounded-lg border text-left transition-all ${
+                    forwardMode === "pool"
+                      ? "border-primary bg-primary/5 ring-2 ring-primary/30"
+                      : "border-border hover:border-primary/30"
+                  }`}
+                >
+                  <div className="text-sm font-medium">Forward to Pool</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">
+                    Any available officer can pick up
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setForwardMode("nearest")}
+                  className={`p-3 rounded-lg border text-left transition-all ${
+                    forwardMode === "nearest"
+                      ? "border-primary bg-primary/5 ring-2 ring-primary/30"
+                      : "border-border hover:border-primary/30"
+                  }`}
+                >
+                  <div className="text-sm font-medium">Nearest Officer</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">
+                    Auto-assign to closest officer
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Additional Note (optional)</label>
+              <textarea
+                className="w-full min-h-[80px] rounded-lg border border-border p-3 text-sm bg-background resize-none focus:outline-none focus:ring-2 focus:ring-primary/50"
+                placeholder="Add any additional details about the issue..."
+                value={issueNote}
+                onChange={(e) => setIssueNote(e.target.value)}
+              />
+            </div>
+
+            {locationError && (
               <div className="rounded-lg bg-destructive/10 border border-destructive/30 p-4 text-sm text-destructive space-y-2">
                 <p className="font-medium flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4" /> Location not set
+                  <AlertTriangle className="h-4 w-4" /> Location required
                 </p>
-                <p>Please set your location from the Dashboard before forwarding to the nearest officer.</p>
+                <p>Please allow location access to create an issue. Your location will be attached to help nearby officers assist you.</p>
               </div>
-              <div className="flex gap-2">
-                <Button variant="outline" className="flex-1" asChild>
-                  <Link to="/dashboard">Go to Dashboard</Link>
-                </Button>
-                <Button
-                  variant="default"
-                  className="flex-1 gap-2"
-                  onClick={() => {
-                    setLocationError(false);
-                    doForward("POOL");
-                  }}
-                  disabled={busyForward}
-                >
-                  {forwardingMode === "POOL" && <Loader2 className="h-4 w-4 animate-spin" />}
-                  <Users className="h-4 w-4" /> Forward to Pool
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="grid gap-3 py-2">
-              <Button
-                className="w-full h-14 gap-3 text-left justify-start"
-                onClick={() => doForward("NEAREST")}
-                disabled={busyForward}
-              >
-                {forwardingMode === "NEAREST" ? (
-                  <Loader2 className="h-5 w-5 animate-spin shrink-0" />
-                ) : (
-                  <MapPin className="h-5 w-5 shrink-0" />
-                )}
-                <div>
-                  <div className="font-semibold">Forward to Nearest Officer</div>
-                  <div className="text-xs font-normal opacity-80">Based on your current location</div>
-                </div>
-              </Button>
+            )}
 
-              <Button
-                variant="outline"
-                className="w-full h-14 gap-3 text-left justify-start"
-                onClick={() => doForward("POOL")}
-                disabled={busyForward}
-              >
-                {forwardingMode === "POOL" ? (
-                  <Loader2 className="h-5 w-5 animate-spin shrink-0" />
-                ) : (
-                  <Users className="h-5 w-5 shrink-0" />
-                )}
-                <div>
-                  <div className="font-semibold">Forward to Pool</div>
-                  <div className="text-xs font-normal opacity-80">Any available officer can pick it up</div>
+            <Button
+              className="w-full h-12 gap-3"
+              onClick={doCreateIssue}
+              disabled={busyForward}
+            >
+              {busyForward ? (
+                <Loader2 className="h-5 w-5 animate-spin shrink-0" />
+              ) : (
+                <Send className="h-5 w-5 shrink-0" />
+              )}
+              <div>
+                <div className="font-semibold">{busyForward ? "Creating Issue..." : "Create Support Issue"}</div>
+                <div className="text-xs font-normal opacity-80">
+                  {forwardMode === "nearest"
+                    ? "Will be assigned to the nearest officer"
+                    : "Officers will review and may group it into a chat"}
                 </div>
-              </Button>
-            </div>
-          )}
+              </div>
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
