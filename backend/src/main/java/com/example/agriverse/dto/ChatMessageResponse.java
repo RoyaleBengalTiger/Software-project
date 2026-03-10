@@ -13,6 +13,8 @@ public class ChatMessageResponse {
     private Long chatRoomId;
     private String senderUsername;
     private String senderRole;
+    private String senderType;
+    private String targetType;
     private String content;
     private MessageType type;
     private Instant createdAt;

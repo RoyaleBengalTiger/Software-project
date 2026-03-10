@@ -35,6 +35,7 @@ import {
   XCircle,
   Forward,
   Loader2,
+  Bot,
 } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
@@ -64,6 +65,8 @@ function roleBadgeVariant(role: string) {
       return "destructive";
     case "FARMER":
       return "secondary";
+    case "AI_ASSISTANT":
+      return "outline";
     default:
       return "outline";
   }
@@ -208,7 +211,10 @@ function ChatRoomInfoPanel({
                 key={m.userId}
                 className="flex items-center justify-between gap-2"
               >
-                <div className="text-sm font-medium truncate">
+                <div className="text-sm font-medium truncate flex items-center gap-1.5">
+                  {m.roleInChat === "AI_ASSISTANT" && (
+                    <Bot className="h-3.5 w-3.5 text-violet-500 shrink-0" />
+                  )}
                   {m.username}
                 </div>
                 <Badge
@@ -219,9 +225,13 @@ function ChatRoomInfoPanel({
                       | "destructive"
                       | "outline"
                   }
-                  className="text-[10px] shrink-0"
+                  className={`text-[10px] shrink-0 ${
+                    m.roleInChat === "AI_ASSISTANT"
+                      ? "border-violet-500/50 text-violet-600"
+                      : ""
+                  }`}
                 >
-                  {m.roleInChat}
+                  {m.roleInChat === "AI_ASSISTANT" ? "AI" : m.roleInChat}
                 </Badge>
               </div>
             ))}
@@ -363,6 +373,7 @@ export default function ChatRoomPage() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [transferring, setTransferring] = useState(false);
+  const [targetOllama, setTargetOllama] = useState(false);
 
   const [infoCollapsed, setInfoCollapsed] = useState(false);
 
@@ -382,7 +393,7 @@ export default function ChatRoomPage() {
   const isMember =
     !!user &&
     (room?.members ?? []).some(
-      (m: ChatMember) => m.username === user.username
+      (m: ChatMember) => m.username === user.username && m.roleInChat !== "AI_ASSISTANT"
     );
 
   const canClose = isMember && (isGovtOfficer || isAdmin) && !isClosed;
@@ -442,10 +453,11 @@ export default function ChatRoomPage() {
     const content = text.trim();
     if (!content || !canSend) return;
 
+    const isAiTarget = targetOllama;
     setSending(true);
     setText("");
     try {
-      await chatRoomsApi.sendMessage(roomId, content);
+      await chatRoomsApi.sendMessage(roomId, content, isAiTarget);
       await load();
     } catch (err) {
       console.error("Failed to send message:", err);
@@ -632,8 +644,9 @@ export default function ChatRoomPage() {
               ) : (
                 messages.map((m) => {
                   const isSystem = m.type === "SYSTEM";
+                  const isAi = m.type === "AI_RESPONSE" || m.senderType === "AI";
                   const mine =
-                    !isSystem && m.senderUsername === user?.username;
+                    !isSystem && !isAi && m.senderUsername === user?.username;
 
                   // SYSTEM messages
                   if (isSystem) {
@@ -654,7 +667,45 @@ export default function ChatRoomPage() {
                     );
                   }
 
-                  // User messages
+                  // AI messages — always left-aligned with distinct styling
+                  if (isAi) {
+                    return (
+                      <div
+                        key={m.id}
+                        className="flex justify-start"
+                      >
+                        <div className="max-w-[88%] sm:max-w-[70%] space-y-1">
+                          <div className="text-[11px] text-muted-foreground ml-1 flex items-center gap-1.5">
+                            <Bot className="h-3 w-3 text-violet-500" />
+                            <span className="font-medium text-violet-600">
+                              Ollama
+                            </span>
+                            <Badge
+                              variant="outline"
+                              className="text-[9px] px-1.5 py-0 h-4 border-violet-500/50 text-violet-600"
+                            >
+                              AI
+                            </Badge>
+                          </div>
+
+                          <div className="rounded-2xl px-4 py-2 text-sm border border-violet-500/30 bg-violet-50/50 dark:bg-violet-950/20">
+                            <div className="whitespace-pre-wrap break-words">
+                              {m.content}
+                            </div>
+                          </div>
+
+                          <div className="text-[11px] text-muted-foreground text-left">
+                            Ollama
+                            {m.createdAt
+                              ? ` \u2022 ${formatTime(m.createdAt)}`
+                              : ""}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  // User messages (original logic)
                   return (
                     <div
                       key={m.id}
@@ -704,6 +755,9 @@ export default function ChatRoomPage() {
                           }`}
                         >
                           {mine ? "You" : m.senderUsername}
+                          {m.targetType === "OLLAMA" && (
+                            <span className="text-violet-500"> (to Ollama)</span>
+                          )}
                           {m.createdAt
                             ? ` \u2022 ${formatTime(m.createdAt)}`
                             : ""}
@@ -722,26 +776,68 @@ export default function ChatRoomPage() {
           <div className="border-t border-border/50 p-2 sm:p-3">
             {canSend ? (
               <>
+                {/* Target selector */}
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-[11px] text-muted-foreground">Send to:</span>
+                  <button
+                    type="button"
+                    onClick={() => setTargetOllama(false)}
+                    className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                      !targetOllama
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-muted/30 text-muted-foreground border-border/50 hover:bg-muted/50"
+                    }`}
+                  >
+                    Everyone
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTargetOllama(true)}
+                    className={`text-xs px-2.5 py-1 rounded-full border transition-colors flex items-center gap-1 ${
+                      targetOllama
+                        ? "bg-violet-600 text-white border-violet-600"
+                        : "bg-muted/30 text-muted-foreground border-border/50 hover:bg-muted/50"
+                    }`}
+                  >
+                    <Bot className="h-3 w-3" />
+                    Ollama
+                  </button>
+                </div>
+
                 <div className="flex gap-2 items-end">
                   <Textarea
                     value={text}
                     onChange={(e) => setText(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="Write a message..."
+                    placeholder={
+                      targetOllama
+                        ? "Ask Ollama a question..."
+                        : "Write a message..."
+                    }
                     disabled={sending}
-                    className="min-h-[44px] max-h-[160px]"
+                    className={`min-h-[44px] max-h-[160px] ${
+                      targetOllama ? "border-violet-500/50 focus-visible:ring-violet-500/30" : ""
+                    }`}
                   />
                   <Button
                     onClick={sendMessage}
                     disabled={!text.trim() || sending}
-                    className="h-[44px] gap-1.5"
+                    className={`h-[44px] gap-1.5 ${
+                      targetOllama ? "bg-violet-600 hover:bg-violet-700" : ""
+                    }`}
                   >
-                    <Send className="h-4 w-4" />
+                    {sending && targetOllama ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
                     Send
                   </Button>
                 </div>
                 <div className="text-[11px] text-muted-foreground mt-2">
-                  Press Enter to send, Shift+Enter for a new line.
+                  {targetOllama
+                    ? "Your question will be sent to Ollama AI. Press Enter to send."
+                    : "Press Enter to send, Shift+Enter for a new line."}
                 </div>
               </>
             ) : (

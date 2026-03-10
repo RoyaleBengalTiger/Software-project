@@ -2,8 +2,8 @@
 import apiClient from "@/api/client";
 
 export type ChatRoomStatus = "ACTIVE" | "CLOSED";
-export type ChatRole = "OFFICER" | "FARMER" | "ADMIN";
-export type MessageType = "TEXT" | "SYSTEM";
+export type ChatRole = "OFFICER" | "FARMER" | "ADMIN" | "AI_ASSISTANT";
+export type MessageType = "TEXT" | "SYSTEM" | "AI_RESPONSE";
 
 export type ChatMember = {
   userId: number;
@@ -38,6 +38,8 @@ export type ChatMessage = {
   chatRoomId: number;
   senderUsername: string;
   senderRole?: string | null;
+  senderType?: string | null;
+  targetType?: string | null;
   content: string;
   type: MessageType;
   createdAt: string;
@@ -92,8 +94,8 @@ export const chatRoomsApi = {
     return res.data;
   },
 
-  sendMessage: async (chatId: number, content: string): Promise<ChatMessage> => {
-    const res = await apiClient.post<ChatMessage>(`/api/chats/${chatId}/messages`, { content });
+  sendMessage: async (chatId: number, content: string, targetOllama = false): Promise<ChatMessage> => {
+    const res = await apiClient.post<ChatMessage>(`/api/chats/${chatId}/messages`, { content, targetOllama });
     return res.data;
   },
 

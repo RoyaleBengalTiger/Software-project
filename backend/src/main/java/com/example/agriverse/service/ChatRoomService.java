@@ -1,6 +1,7 @@
 package com.example.agriverse.service;
 
 import com.example.agriverse.dto.*;
+import com.example.agriverse.config.AiUserConfig;
 import com.example.agriverse.model.*;
 import com.example.agriverse.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +13,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -25,6 +27,7 @@ public class ChatRoomService {
     private final ChatMessageRepository messageRepo;
     private final IssueRepository issueRepo;
     private final UserRepository userRepo;
+    private final ChatAiService chatAiService;
 
     private User currentUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -235,14 +238,32 @@ public class ChatRoomService {
             throw new RuntimeException("Only chat members can send messages");
         }
 
+        // Prevent clients from spoofing as the AI user
+        if (AiUserConfig.OLLAMA_USERNAME.equals(sender.getUsername())) {
+            throw new RuntimeException("Cannot send messages as the AI user");
+        }
+
+        boolean targetingOllama = req.isTargetOllama();
+
         ChatMessage message = ChatMessage.builder()
                 .chatRoom(chatRoom)
                 .sender(sender)
                 .content(req.getContent().trim())
                 .type(MessageType.TEXT)
+                .senderType("USER")
+                .targetType(targetingOllama ? "OLLAMA" : "EVERYONE")
                 .build();
 
         message = messageRepo.save(message);
+
+        // If targeting Ollama, trigger AI response asynchronously.
+        // The @Async method runs on Spring's managed thread pool with proper
+        // transaction context. The HTTP response returns immediately with the
+        // user's message; Ollama's reply will appear via the frontend's polling.
+        if (targetingOllama) {
+            chatAiService.generateAndSaveResponse(chatRoom.getId(), message.getId());
+        }
+
         return toMessageResponse(message);
     }
 
@@ -332,6 +353,22 @@ public class ChatRoomService {
         List<ChatMembership> members = membershipRepo.findByChatRoomId(cr.getId());
         List<ChatIssueLink> links = chatIssueLinkRepo.findByChatRoomId(cr.getId());
 
+        List<ChatMemberResponse> memberList = new ArrayList<>(members.stream().map(m -> ChatMemberResponse.builder()
+                .userId(m.getUser().getId())
+                .username(m.getUser().getUsername())
+                .roleInChat(m.getRoleInChat())
+                .joinedAt(m.getJoinedAt())
+                .build())
+                .collect(Collectors.toList()));
+
+        // Add Ollama as a pseudo-member (always present in every chat room)
+        memberList.add(ChatMemberResponse.builder()
+                .userId(-1L)
+                .username(AiUserConfig.OLLAMA_USERNAME)
+                .roleInChat(ChatRole.AI_ASSISTANT)
+                .joinedAt(cr.getCreatedAt())
+                .build());
+
         return ChatRoomResponse.builder()
                 .id(cr.getId())
                 .title(cr.getTitle())
@@ -340,13 +377,7 @@ public class ChatRoomService {
                 .status(cr.getStatus())
                 .createdAt(cr.getCreatedAt())
                 .updatedAt(cr.getUpdatedAt())
-                .members(members.stream().map(m -> ChatMemberResponse.builder()
-                        .userId(m.getUser().getId())
-                        .username(m.getUser().getUsername())
-                        .roleInChat(m.getRoleInChat())
-                        .joinedAt(m.getJoinedAt())
-                        .build())
-                        .collect(Collectors.toList()))
+                .members(memberList)
                 .linkedIssues(links.stream().map(l -> ChatIssueInfo.builder()
                         .issueId(l.getIssue().getId())
                         .farmerUsername(l.getIssue().getFarmer().getUsername())
@@ -360,11 +391,21 @@ public class ChatRoomService {
     }
 
     private ChatMessageResponse toMessageResponse(ChatMessage m) {
+        String senderRole = m.getSender().getRoles().stream()
+                .findFirst().map(Role::getName).orElse(null);
+
+        // For AI-sent messages, override the role label
+        if ("AI".equals(m.getSenderType())) {
+            senderRole = "AI_ASSISTANT";
+        }
+
         return ChatMessageResponse.builder()
                 .id(m.getId())
                 .chatRoomId(m.getChatRoom().getId())
                 .senderUsername(m.getSender().getUsername())
-                .senderRole(m.getSender().getRoles().stream().findFirst().map(Role::getName).orElse(null))
+                .senderRole(senderRole)
+                .senderType(m.getSenderType())
+                .targetType(m.getTargetType())
                 .content(m.getContent())
                 .type(m.getType())
                 .createdAt(m.getCreatedAt())

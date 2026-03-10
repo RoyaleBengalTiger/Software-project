@@ -2,5 +2,6 @@ package com.example.agriverse.model;
 
 public enum MessageType {
     TEXT,
-    SYSTEM
+    SYSTEM,
+    AI_RESPONSE
 }

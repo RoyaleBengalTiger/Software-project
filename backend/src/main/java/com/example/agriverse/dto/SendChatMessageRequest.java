@@ -9,4 +9,6 @@ import lombok.Setter;
 public class SendChatMessageRequest {
     @NotBlank
     private String content;
+
+    private boolean targetOllama;
 }

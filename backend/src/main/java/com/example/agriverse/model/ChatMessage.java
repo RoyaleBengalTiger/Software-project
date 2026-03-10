@@ -35,6 +35,12 @@ public class ChatMessage {
     @Builder.Default
     private MessageType type = MessageType.TEXT;
 
+    @Column(length = 10)
+    private String senderType;
+
+    @Column(length = 20)
+    private String targetType;
+
     @Column(nullable = false)
     private Instant createdAt;
 
