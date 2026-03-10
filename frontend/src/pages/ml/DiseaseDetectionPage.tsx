@@ -36,9 +36,34 @@ import {
   X,
   Trash2,
   Crop,
+  MapPin,
+  Shield,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { AxiosError } from "axios";
+
+// ─── Map (mini-map in forward dialog) ───
+import { MapContainer, TileLayer, Marker, CircleMarker, Popup, useMap } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import { mapApi, Officer } from "@/api/map";
+
+// Fix default Leaflet marker icons
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+});
+
+const nearestOfficerIcon = new L.Icon({
+  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+});
 
 // ─── Cropper ───
 import Cropper from "react-cropper";
@@ -161,6 +186,28 @@ function normalizePredictResponse(res: any): {
   return { prediction: predObj ?? null, isLeaf, reason };
 }
 
+/** Haversine distance in km between two lat/lng points */
+function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+/** Auto-fit map bounds to include all given points */
+function FitBounds({ points }: { points: [number, number][] }) {
+  const map = useMap();
+  useEffect(() => {
+    if (points.length === 0) return;
+    const bounds = L.latLngBounds(points.map(([lat, lng]) => [lat, lng]));
+    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
+  }, [map, points]);
+  return null;
+}
+
 // ═══════════════════════════════════════════════════════
 // Main Page
 // ═══════════════════════════════════════════════════════
@@ -191,6 +238,11 @@ export default function DiseaseDetectionPage() {
   const [isDragging, setIsDragging] = useState(false);
   const [issueNote, setIssueNote] = useState("");
   const [forwardMode, setForwardMode] = useState<"pool" | "nearest">("pool");
+
+  // ─── Mini-map state (forward dialog) ───
+  const [mapOfficers, setMapOfficers] = useState<Officer[]>([]);
+  const [mapUserLoc, setMapUserLoc] = useState<{ lat: number; lng: number } | null>(null);
+  const [mapLoading, setMapLoading] = useState(false);
 
   // ─── Crop Dialog State ───
   const [cropIndex, setCropIndex] = useState<number | null>(null);
@@ -415,6 +467,45 @@ export default function DiseaseDetectionPage() {
     setLocationError(false);
     setForwardDialogOpen(true);
   }, [permissionToForward]);
+
+  // ─── Fetch officers + user location when forward dialog opens ───
+  useEffect(() => {
+    if (!forwardDialogOpen) return;
+    let cancelled = false;
+
+    setMapLoading(true);
+    Promise.all([
+      mapApi.getOfficers().catch(() => [] as Officer[]),
+      new Promise<{ lat: number; lng: number } | null>((resolve) => {
+        if (!navigator.geolocation) { resolve(null); return; }
+        navigator.geolocation.getCurrentPosition(
+          (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+          () => resolve(null),
+          { enableHighAccuracy: false, timeout: 7000, maximumAge: 300000 }
+        );
+      }),
+    ]).then(([officers, loc]) => {
+      if (cancelled) return;
+      setMapOfficers(officers);
+      setMapUserLoc(loc);
+      setMapLoading(false);
+    });
+
+    return () => { cancelled = true; };
+  }, [forwardDialogOpen]);
+
+  // ─── Nearest officer (derived) ───
+  const nearestOfficer = useMemo(() => {
+    if (!mapUserLoc || mapOfficers.length === 0) return null;
+    let best: Officer | null = null;
+    let bestDist = Infinity;
+    for (const o of mapOfficers) {
+      if (o.latitude == null || o.longitude == null) continue;
+      const d = haversineKm(mapUserLoc.lat, mapUserLoc.lng, o.latitude, o.longitude);
+      if (d < bestDist) { bestDist = d; best = o; }
+    }
+    return best ? { ...best, distance: bestDist } : null;
+  }, [mapUserLoc, mapOfficers]);
 
   const doCreateIssue = useCallback(
     async () => {
@@ -1185,6 +1276,104 @@ export default function DiseaseDetectionPage() {
                 </button>
               </div>
             </div>
+
+            {/* ─── Mini Map: Nearest Officer ─── */}
+            {mapLoading ? (
+              <div className="flex items-center justify-center gap-2 py-6 text-muted-foreground text-sm rounded-lg border border-border bg-muted/20">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Loading map...
+              </div>
+            ) : mapUserLoc && mapOfficers.length > 0 ? (
+              <div className="space-y-2">
+                <label className="text-sm font-medium flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-primary" />
+                  Nearest Government Officer
+                </label>
+                <div className="rounded-lg border border-border overflow-hidden" style={{ height: 200 }}>
+                  <MapContainer
+                    center={[mapUserLoc.lat, mapUserLoc.lng]}
+                    zoom={12}
+                    style={{ height: "100%", width: "100%" }}
+                    zoomControl={false}
+                    attributionControl={false}
+                  >
+                    <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+
+                    {/* User location — blue pulsing dot */}
+                    <CircleMarker
+                      center={[mapUserLoc.lat, mapUserLoc.lng]}
+                      radius={8}
+                      pathOptions={{ color: "#3b82f6", fillColor: "#3b82f6", fillOpacity: 0.9, weight: 2 }}
+                    >
+                      <Popup>
+                        <span className="text-xs font-medium">Your Location</span>
+                      </Popup>
+                    </CircleMarker>
+                    <CircleMarker
+                      center={[mapUserLoc.lat, mapUserLoc.lng]}
+                      radius={18}
+                      pathOptions={{ color: "#3b82f6", fillColor: "#3b82f6", fillOpacity: 0.15, weight: 1 }}
+                    />
+
+                    {/* Nearest officer marker */}
+                    {nearestOfficer && (
+                      <Marker
+                        position={[nearestOfficer.latitude, nearestOfficer.longitude]}
+                        icon={nearestOfficerIcon}
+                      >
+                        <Popup>
+                          <div className="text-xs">
+                            <p className="font-semibold">{nearestOfficer.username}</p>
+                            <p className="text-muted-foreground">{nearestOfficer.email}</p>
+                            <p className="font-medium text-primary mt-0.5">
+                              {nearestOfficer.distance < 1
+                                ? `${(nearestOfficer.distance * 1000).toFixed(0)} m away`
+                                : `${nearestOfficer.distance.toFixed(1)} km away`}
+                            </p>
+                          </div>
+                        </Popup>
+                      </Marker>
+                    )}
+
+                    {/* Fit bounds to show both user and nearest officer */}
+                    {nearestOfficer && (
+                      <FitBounds
+                        points={[
+                          [mapUserLoc.lat, mapUserLoc.lng],
+                          [nearestOfficer.latitude, nearestOfficer.longitude],
+                        ]}
+                      />
+                    )}
+                  </MapContainer>
+                </div>
+
+                {/* Officer info card below map */}
+                {nearestOfficer && (
+                  <div className="flex items-center gap-3 p-2.5 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
+                    <div className="h-8 w-8 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
+                      <Shield className="h-4 w-4 text-emerald-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{nearestOfficer.username}</p>
+                      <p className="text-xs text-muted-foreground truncate">{nearestOfficer.email}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-sm font-semibold text-emerald-600">
+                        {nearestOfficer.distance < 1
+                          ? `${(nearestOfficer.distance * 1000).toFixed(0)} m`
+                          : `${nearestOfficer.distance.toFixed(1)} km`}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">away</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : mapUserLoc && mapOfficers.length === 0 && !mapLoading ? (
+              <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 p-3 text-sm text-amber-700 dark:text-amber-400 flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 shrink-0" />
+                No officers with location data found.
+              </div>
+            ) : null}
 
             <div className="space-y-2">
               <label className="text-sm font-medium">Additional Note (optional)</label>

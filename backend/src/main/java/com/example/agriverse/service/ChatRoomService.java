@@ -349,6 +349,60 @@ public class ChatRoomService {
         return toResponse(chatRoom);
     }
 
+    @Transactional
+    public ChatRoomResponse removeIssueFromChat(Long chatRoomId, Long issueId, String reassignToUsername) {
+        User actor = currentUser();
+        if (!hasRole(actor, "ROLE_GOVT_OFFICER") && !hasRole(actor, "ROLE_ADMIN"))
+            throw new RuntimeException("Forbidden");
+
+        ChatRoom chatRoom = chatRoomRepo.findById(chatRoomId)
+                .orElseThrow(() -> new RuntimeException("Chat room not found"));
+
+        if (chatRoom.getStatus() != ChatRoomStatus.ACTIVE)
+            throw new RuntimeException("Cannot modify a closed chat room");
+
+        if (!membershipRepo.existsByChatRoomIdAndUserId(chatRoomId, actor.getId()))
+            throw new RuntimeException("You are not a member of this chat room");
+
+        ChatIssueLink link = chatIssueLinkRepo.findByChatRoomIdAndIssueId(chatRoomId, issueId)
+                .orElseThrow(() -> new RuntimeException("Issue is not linked to this chat room"));
+
+        Issue issue = link.getIssue();
+
+        // Remove the link
+        chatIssueLinkRepo.delete(link);
+
+        // Reassign issue
+        if (reassignToUsername != null && !reassignToUsername.isBlank()) {
+            String target = reassignToUsername.trim();
+            User targetUser = userRepo.findByUsername(target)
+                    .orElseThrow(() -> new RuntimeException("Target officer not found"));
+            if (!hasRole(targetUser, "ROLE_GOVT_OFFICER") && !hasRole(targetUser, "ROLE_ADMIN"))
+                throw new RuntimeException("Target user is not a government officer");
+
+            issue.setAssignedOfficer(targetUser);
+            issue.setStatus(IssueStatus.UNDER_REVIEW);
+        } else {
+            // Send to pool
+            issue.setAssignedOfficer(null);
+            issue.setStatus(IssueStatus.NEW);
+        }
+        issueRepo.save(issue);
+
+        // Post system message
+        String action = (reassignToUsername != null && !reassignToUsername.isBlank())
+                ? "reassigned issue #" + issueId + " to " + reassignToUsername.trim()
+                : "sent issue #" + issueId + " to the pool";
+        messageRepo.save(ChatMessage.builder()
+                .chatRoom(chatRoom)
+                .sender(actor)
+                .content(actor.getUsername() + " removed and " + action)
+                .type(MessageType.SYSTEM)
+                .build());
+
+        return toResponse(chatRoom);
+    }
+
     private ChatRoomResponse toResponse(ChatRoom cr) {
         List<ChatMembership> members = membershipRepo.findByChatRoomId(cr.getId());
         List<ChatIssueLink> links = chatIssueLinkRepo.findByChatRoomId(cr.getId());

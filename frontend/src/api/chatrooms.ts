@@ -108,4 +108,12 @@ export const chatRoomsApi = {
     const res = await apiClient.post<ChatRoom>(`/api/chats/${chatId}/transfer`, { toOfficerUsername });
     return res.data;
   },
+
+  removeIssue: async (chatId: number, issueId: number, reassignToUsername?: string): Promise<ChatRoom> => {
+    const res = await apiClient.post<ChatRoom>(`/api/chats/${chatId}/remove-issue`, {
+      issueId,
+      reassignToUsername: reassignToUsername ?? null,
+    });
+    return res.data;
+  },
 };

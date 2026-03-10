@@ -136,4 +136,28 @@ public class IssueController {
             @RequestBody ForwardIssueRequest body) {
         return ResponseEntity.ok(issueService.forwardIssue(id, body.getToOfficerUsername()));
     }
+
+    @PreAuthorize("hasAnyRole('GOVT_OFFICER','ADMIN')")
+    @PostMapping("/{id:\\d+}/forward-to-pool")
+    public ResponseEntity<?> forwardToPool(@PathVariable Long id) {
+        return ResponseEntity.ok(issueService.forwardToPool(id));
+    }
+
+    @PreAuthorize("hasAnyRole('GOVT_OFFICER','ADMIN')")
+    @PutMapping("/{id:\\d+}")
+    public ResponseEntity<?> editIssue(
+            @PathVariable Long id,
+            @RequestBody Map<String, Object> body) {
+        String predictedDisease = body.containsKey("predictedDisease") ? String.valueOf(body.get("predictedDisease")) : null;
+        String reviewedDisease = body.containsKey("reviewedDisease") ? String.valueOf(body.get("reviewedDisease")) : null;
+        String cropName = body.containsKey("cropName") ? String.valueOf(body.get("cropName")) : null;
+        Double confidence = body.containsKey("confidence") && body.get("confidence") != null
+                ? Double.parseDouble(String.valueOf(body.get("confidence"))) : null;
+        String note = body.containsKey("note") ? String.valueOf(body.get("note")) : null;
+        String status = body.containsKey("status") ? String.valueOf(body.get("status")) : null;
+        String locationText = body.containsKey("locationText") ? String.valueOf(body.get("locationText")) : null;
+
+        return ResponseEntity.ok(issueService.editIssue(id, predictedDisease, reviewedDisease,
+                cropName, confidence, note, status, locationText));
+    }
 }

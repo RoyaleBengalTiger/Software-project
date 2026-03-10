@@ -155,6 +155,24 @@ export const issuesApi = {
     return res.data;
   },
 
+  forwardToPool: async (id: number): Promise<Issue> => {
+    const res = await apiClient.post<Issue>(`/api/issues/${id}/forward-to-pool`);
+    return res.data;
+  },
+
+  editIssue: async (id: number, data: {
+    predictedDisease?: string;
+    reviewedDisease?: string;
+    cropName?: string;
+    confidence?: number;
+    note?: string;
+    status?: IssueStatus;
+    locationText?: string;
+  }): Promise<Issue> => {
+    const res = await apiClient.put<Issue>(`/api/issues/${id}`, data);
+    return res.data;
+  },
+
   pool: async (page = 0, size = 20) => {
     const res = await apiClient.get("/api/issues/pool", { params: { page, size } });
     return res.data;

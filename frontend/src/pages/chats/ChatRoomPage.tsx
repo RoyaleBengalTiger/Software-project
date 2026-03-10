@@ -36,6 +36,8 @@ import {
   Forward,
   Loader2,
   Bot,
+  Inbox,
+  Unlink,
 } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
@@ -105,18 +107,22 @@ function ChatRoomInfoPanel({
   isMember,
   canClose,
   canTransfer,
+  canRemoveIssue,
   onClose,
   onIssueClick,
   onTransfer,
+  onRemoveIssue,
   transferring,
 }: {
   room: ChatRoom | null;
   isMember: boolean;
   canClose: boolean;
   canTransfer: boolean;
+  canRemoveIssue: boolean;
   onClose: () => void;
   onIssueClick: (issueId: number) => void;
   onTransfer: (toOfficerUsername: string) => void;
+  onRemoveIssue: (issueId: number, reassignTo?: string) => void;
   transferring: boolean;
 }) {
   if (!room) return null;
@@ -128,6 +134,12 @@ function ChatRoomInfoPanel({
   const [selectedOfficer, setSelectedOfficer] = useState("");
   const [showTransfer, setShowTransfer] = useState(false);
 
+  // Remove-issue state: which issue is being actioned, and the reassign officer selector
+  const [removeIssueId, setRemoveIssueId] = useState<number | null>(null);
+  const [reassignOfficer, setReassignOfficer] = useState("");
+  const [removeOfficers, setRemoveOfficers] = useState<{ username: string }[]>([]);
+  const [removingIssueId, setRemovingIssueId] = useState<number | null>(null);
+
   useEffect(() => {
     if (showTransfer && officers.length === 0) {
       issuesApi.listGovtOfficers().then((list) => {
@@ -138,6 +150,36 @@ function ChatRoomInfoPanel({
       });
     }
   }, [showTransfer]);
+
+  // Fetch officers list when the remove-issue panel opens
+  useEffect(() => {
+    if (removeIssueId != null && removeOfficers.length === 0) {
+      issuesApi.listGovtOfficers().then((list) => setRemoveOfficers(list));
+    }
+  }, [removeIssueId]);
+
+  const handleRemoveToPool = async (issueId: number) => {
+    setRemovingIssueId(issueId);
+    try {
+      await onRemoveIssue(issueId);
+      setRemoveIssueId(null);
+      setReassignOfficer("");
+    } finally {
+      setRemovingIssueId(null);
+    }
+  };
+
+  const handleRemoveReassign = async (issueId: number) => {
+    if (!reassignOfficer) return;
+    setRemovingIssueId(issueId);
+    try {
+      await onRemoveIssue(issueId, reassignOfficer);
+      setRemoveIssueId(null);
+      setReassignOfficer("");
+    } finally {
+      setRemovingIssueId(null);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -251,29 +293,117 @@ function ChatRoomInfoPanel({
 
           <div className="space-y-1.5">
             {linkedIssues.map((issue) => (
-              <button
-                key={issue.issueId}
-                type="button"
-                onClick={() => onIssueClick(issue.issueId)}
-                className="block w-full text-left rounded-lg border border-border/50 p-2 hover:bg-muted/30 transition-colors"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <div className="text-sm font-medium truncate">
-                    #{issue.issueId} &mdash;{" "}
-                    {issue.predictedDisease || "Unknown"}
-                  </div>
-                  <span
-                    className={`text-[10px] rounded-full px-1.5 py-0.5 ${issueStatusColor(
-                      issue.issueStatus
-                    )}`}
+              <div key={issue.issueId}>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => onIssueClick(issue.issueId)}
+                    className="flex-1 text-left rounded-lg border border-border/50 p-2 hover:bg-muted/30 transition-colors"
                   >
-                    {issue.issueStatus}
-                  </span>
+                    <div className="text-sm font-medium truncate">
+                      #{issue.issueId} &mdash;{" "}
+                      {issue.predictedDisease || "Unknown"}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      Farmer: {issue.farmerUsername}
+                    </div>
+                  </button>
+                  {canRemoveIssue && room.status === "ACTIVE" && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
+                      title="Remove from chat"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setRemoveIssueId(
+                          removeIssueId === issue.issueId ? null : issue.issueId
+                        );
+                        setReassignOfficer("");
+                      }}
+                    >
+                      <Unlink className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
                 </div>
-                <div className="text-xs text-muted-foreground mt-0.5">
-                  Farmer: {issue.farmerUsername}
-                </div>
-              </button>
+
+                {/* Remove / Reassign panel */}
+                {removeIssueId === issue.issueId && (
+                  <div className="mt-1.5 ml-1 rounded-lg border border-border/50 p-2.5 space-y-2 bg-muted/20">
+                    <div className="text-xs font-medium">
+                      Remove Issue #{issue.issueId} from chat
+                    </div>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full gap-1.5 text-xs"
+                      disabled={removingIssueId === issue.issueId}
+                      onClick={() => handleRemoveToPool(issue.issueId)}
+                    >
+                      {removingIssueId === issue.issueId ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <Inbox className="h-3 w-3" />
+                      )}
+                      Send to Pool
+                    </Button>
+
+                    <div className="text-xs text-muted-foreground text-center">
+                      or reassign to an officer
+                    </div>
+
+                    <Select
+                      value={reassignOfficer}
+                      onValueChange={setReassignOfficer}
+                    >
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="Select officer..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {removeOfficers.map((o) => (
+                          <SelectItem key={o.username} value={o.username}>
+                            {o.username}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1 text-xs"
+                        disabled={removingIssueId === issue.issueId}
+                        onClick={() => {
+                          setRemoveIssueId(null);
+                          setReassignOfficer("");
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="flex-1 gap-1.5 text-xs"
+                        disabled={
+                          !reassignOfficer ||
+                          removingIssueId === issue.issueId
+                        }
+                        onClick={() =>
+                          handleRemoveReassign(issue.issueId)
+                        }
+                      >
+                        {removingIssueId === issue.issueId ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <Forward className="h-3 w-3" />
+                        )}
+                        Reassign
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         </div>
@@ -400,6 +530,8 @@ export default function ChatRoomPage() {
 
   const canTransfer = isMember && (isGovtOfficer || isAdmin) && !isClosed;
 
+  const canRemoveIssue = isMember && (isGovtOfficer || isAdmin) && !isClosed;
+
   const canSend = isMember && !isClosed;
 
   /* ---- Data loading ---- */
@@ -490,6 +622,16 @@ export default function ChatRoomPage() {
       console.error("Failed to transfer chat:", err);
     } finally {
       setTransferring(false);
+    }
+  };
+
+  const handleRemoveIssue = async (issueId: number, reassignTo?: string) => {
+    if (!canRemoveIssue) return;
+    try {
+      await chatRoomsApi.removeIssue(roomId, issueId, reassignTo);
+      await load();
+    } catch (err) {
+      console.error("Failed to remove issue:", err);
     }
   };
 
@@ -599,9 +741,11 @@ export default function ChatRoomPage() {
                         isMember={isMember}
                         canClose={canClose}
                         canTransfer={canTransfer}
+                        canRemoveIssue={canRemoveIssue}
                         onClose={closeChat}
                         onIssueClick={openIssueModal}
                         onTransfer={handleTransfer}
+                        onRemoveIssue={handleRemoveIssue}
                         transferring={transferring}
                       />
                     </SheetContent>
@@ -866,9 +1010,11 @@ export default function ChatRoomPage() {
                 isMember={isMember}
                 canClose={canClose}
                 canTransfer={canTransfer}
+                canRemoveIssue={canRemoveIssue}
                 onClose={closeChat}
                 onIssueClick={openIssueModal}
                 onTransfer={handleTransfer}
+                onRemoveIssue={handleRemoveIssue}
                 transferring={transferring}
               />
             </CardContent>

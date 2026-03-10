@@ -100,4 +100,21 @@ public class ChatRoomController {
         }
         return ResponseEntity.ok(chatRoomService.transferChat(id, toOfficerUsername));
     }
+
+    @PreAuthorize("hasAnyRole('GOVT_OFFICER','ADMIN')")
+    @PostMapping("/{id}/remove-issue")
+    public ResponseEntity<?> removeIssue(
+            @PathVariable Long id,
+            @RequestBody java.util.Map<String, Object> body) {
+        Object issueIdObj = body.get("issueId");
+        if (issueIdObj == null) {
+            return ResponseEntity.badRequest().body("issueId is required");
+        }
+        Long issueId = Long.parseLong(String.valueOf(issueIdObj));
+        String reassignTo = body.containsKey("reassignToUsername")
+                ? String.valueOf(body.get("reassignToUsername"))
+                : null;
+        if ("null".equals(reassignTo)) reassignTo = null;
+        return ResponseEntity.ok(chatRoomService.removeIssueFromChat(id, issueId, reassignTo));
+    }
 }

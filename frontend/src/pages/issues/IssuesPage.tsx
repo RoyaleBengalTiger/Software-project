@@ -194,33 +194,16 @@ function IssueListItem({
   return (
     <div
       className={`
-        w-full text-left rounded-xl border bg-card/50 px-4 py-3
+        group w-full text-left rounded-xl border bg-card/50 px-4 py-3
         hover:bg-card/70 transition-colors
         ${selected ? "border-primary/50 bg-primary/5" : "border-border/60"}
       `}
     >
       <div className="flex items-center gap-3">
-        {/* Checkbox for multi-select */}
-        {selectable && (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggle?.();
-            }}
-            className={`
-              shrink-0 h-5 w-5 rounded border-2 flex items-center justify-center transition-colors
-              ${
-                selected
-                  ? "bg-primary border-primary text-primary-foreground"
-                  : "border-muted-foreground/40 hover:border-primary"
-              }
-            `}
-            aria-label={selected ? "Deselect issue" : "Select issue"}
-          >
-            {selected && <CheckCircle2 className="h-3 w-3" />}
-          </button>
-        )}
+        {/* Issue number pill */}
+        <div className="shrink-0 h-8 min-w-[2rem] px-2 rounded-lg bg-muted/70 flex items-center justify-center">
+          <span className="text-xs font-semibold text-muted-foreground tabular-nums">{issue.id}</span>
+        </div>
 
         {/* Main content - clickable */}
         <button
@@ -230,9 +213,6 @@ function IssueListItem({
         >
           <div className="flex items-center gap-2 min-w-0 flex-wrap">
             <span className="font-medium truncate">
-              <span className="text-muted-foreground">#</span>
-              {issue.id}{" "}
-              <span className="text-muted-foreground">·</span>{" "}
               {diseaseName(issue)}
             </span>
             <IssueStatusBadge status={issue.status} />
@@ -244,43 +224,48 @@ function IssueListItem({
           </div>
 
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <Users className="h-3 w-3" />
-              {issue.farmerUsername}
-            </span>
-            {issue.assignedOfficerUsername && (
-              <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
-                <UserCheck className="h-3 w-3" />
-                {issue.assignedOfficerUsername}
-              </span>
-            )}
             {issue.locationText && (
               <span className="flex items-center gap-1 truncate max-w-[200px]">
                 <MapPin className="h-3 w-3" />
                 {issue.locationText}
               </span>
             )}
-            <span className="flex items-center gap-1">
-              <Clock className="h-3 w-3" />
-              {fmt(issue.createdAt)}
-            </span>
-            {issue.linkedChatTitle && (
-              <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
-                <MessageSquare className="h-3 w-3" />
-                {issue.linkedChatTitle}
-              </span>
-            )}
           </div>
         </button>
 
-        {/* Chevron affordance */}
-        <button
-          type="button"
-          onClick={onOpen}
-          className="shrink-0 h-8 w-8 rounded-full bg-muted/60 flex items-center justify-center hover:bg-muted transition-colors"
-        >
-          <ChevronRight className="h-4 w-4 text-muted-foreground" />
-        </button>
+        {/* Right side: selection checkbox (on hover / when selected) or chevron */}
+        {selectable ? (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggle?.();
+            }}
+            className={`
+              shrink-0 h-8 w-8 rounded-full flex items-center justify-center transition-all
+              ${
+                selected
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted/60 opacity-0 group-hover:opacity-100 hover:bg-muted"
+              }
+            `}
+            aria-label={selected ? "Deselect issue" : "Select issue"}
+          >
+            {selected ? (
+              <CheckCircle2 className="h-4 w-4" />
+            ) : (
+              <div className="h-4 w-4 rounded-full border-2 border-muted-foreground/40" />
+            )}
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={onOpen}
+            className="shrink-0 h-8 w-8 rounded-full bg-muted/60 flex items-center justify-center hover:bg-muted transition-colors"
+          >
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          </button>
+        )}
       </div>
     </div>
   );
@@ -675,6 +660,80 @@ export default function IssuesPage() {
           /* ---------- Officer view ---------- */
           loading ? (
             <ListSkeleton />
+          ) : officerFilter === "assigned" ? (
+            /* --- My Issues: segmented into Under Review (selectable) and Others --- */
+            (() => {
+              const underReview = officerList.filter((i) => i.status === "UNDER_REVIEW");
+              const others = officerList.filter((i) => i.status !== "UNDER_REVIEW");
+
+              if (officerList.length === 0) {
+                return (
+                  <EmptyState
+                    title={officerEmptyHints[officerFilter].title}
+                    hint={officerEmptyHints[officerFilter].hint}
+                  />
+                );
+              }
+
+              return (
+                <div className="space-y-6">
+                  {/* Under Review section */}
+                  {underReview.length > 0 && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="h-7 w-7 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                          <Clock className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                        </div>
+                        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                          Under Review
+                        </h3>
+                        <Badge variant="secondary" className="rounded-full px-2 py-0 text-[10px]">
+                          {underReview.length}
+                        </Badge>
+                      </div>
+                      <div className="space-y-2">
+                        {underReview.map((issue) => (
+                          <IssueListItem
+                            key={issue.id}
+                            issue={issue}
+                            selectable
+                            selected={selectedIds.has(issue.id)}
+                            onToggle={() => toggleSelect(issue.id)}
+                            onOpen={() => openIssue(issue.id)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* In Chat & Others section */}
+                  {others.length > 0 && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="h-7 w-7 rounded-lg bg-muted flex items-center justify-center">
+                          <MessageSquare className="h-3.5 w-3.5 text-muted-foreground" />
+                        </div>
+                        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                          In Chat &amp; Others
+                        </h3>
+                        <Badge variant="secondary" className="rounded-full px-2 py-0 text-[10px]">
+                          {others.length}
+                        </Badge>
+                      </div>
+                      <div className="space-y-2">
+                        {others.map((issue) => (
+                          <IssueListItem
+                            key={issue.id}
+                            issue={issue}
+                            onOpen={() => openIssue(issue.id)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()
           ) : officerList.length === 0 ? (
             <EmptyState
               title={officerEmptyHints[officerFilter].title}
@@ -686,9 +745,9 @@ export default function IssuesPage() {
                 <IssueListItem
                   key={issue.id}
                   issue={issue}
-                  selectable
-                  selected={selectedIds.has(issue.id)}
-                  onToggle={() => toggleSelect(issue.id)}
+                  selectable={officerFilter === "pool"}
+                  selected={officerFilter === "pool" ? selectedIds.has(issue.id) : undefined}
+                  onToggle={officerFilter === "pool" ? () => toggleSelect(issue.id) : undefined}
                   onOpen={() => openIssue(issue.id)}
                 />
               ))}

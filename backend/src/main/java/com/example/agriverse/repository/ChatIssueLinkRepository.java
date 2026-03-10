@@ -15,4 +15,6 @@ public interface ChatIssueLinkRepository extends JpaRepository<ChatIssueLink, Lo
     boolean existsByIssueId(Long issueId);
 
     boolean existsByChatRoomIdAndIssueId(Long chatRoomId, Long issueId);
+
+    Optional<ChatIssueLink> findByChatRoomIdAndIssueId(Long chatRoomId, Long issueId);
 }

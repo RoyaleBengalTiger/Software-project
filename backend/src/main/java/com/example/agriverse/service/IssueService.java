@@ -188,6 +188,55 @@ public class IssueService {
         return toResponse(issueRepo.save(issue));
     }
 
+    public IssueResponse forwardToPool(Long issueId) {
+        User actor = currentUser();
+        if (!hasRole(actor, "ROLE_GOVT_OFFICER") && !hasRole(actor, "ROLE_ADMIN"))
+            throw new RuntimeException("Forbidden");
+
+        Issue issue = issueRepo.findById(issueId)
+                .orElseThrow(() -> new RuntimeException("Issue not found"));
+
+        if (issue.getStatus() == IssueStatus.CLOSED || issue.getStatus() == IssueStatus.RESOLVED)
+            throw new RuntimeException("Cannot forward a closed or resolved issue");
+
+        issue.setAssignedOfficer(null);
+        issue.setStatus(IssueStatus.NEW);
+        return toResponse(issueRepo.save(issue));
+    }
+
+    public IssueResponse editIssue(Long issueId, String predictedDisease, String reviewedDisease,
+                                    String cropName, Double confidence, String note,
+                                    String status, String locationText) {
+        User actor = currentUser();
+        if (!hasRole(actor, "ROLE_GOVT_OFFICER") && !hasRole(actor, "ROLE_ADMIN"))
+            throw new RuntimeException("Forbidden");
+
+        Issue issue = issueRepo.findById(issueId)
+                .orElseThrow(() -> new RuntimeException("Issue not found"));
+
+        if (predictedDisease != null && !predictedDisease.isBlank())
+            issue.setPredictedDisease(predictedDisease.trim());
+        if (reviewedDisease != null)
+            issue.setReviewedDisease(reviewedDisease.trim().isEmpty() ? null : reviewedDisease.trim());
+        if (cropName != null)
+            issue.setCropName(cropName.trim().isEmpty() ? null : cropName.trim());
+        if (confidence != null)
+            issue.setConfidence(confidence);
+        if (note != null)
+            issue.setNote(note.trim());
+        if (locationText != null)
+            issue.setLocationText(locationText.trim().isEmpty() ? null : locationText.trim());
+        if (status != null && !status.isBlank()) {
+            issue.setStatus(IssueStatus.valueOf(status.trim().toUpperCase()));
+        }
+
+        if (reviewedDisease != null && !reviewedDisease.isBlank()) {
+            issue.setDiagnosisSource(DiagnosisSource.OFFICER_REVIEWED);
+        }
+
+        return toResponse(issueRepo.save(issue));
+    }
+
     public IssueResponse createIssueForNearestOfficer(
             CreateIssueRequest req,
             List<MultipartFile> images) {

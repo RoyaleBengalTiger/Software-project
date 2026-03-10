@@ -24,11 +24,17 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.transaction.annotation.Transactional;
+
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "http://localhost:5173") // frontend URL
 public class UserController {
+
+    private static final Logger log = LoggerFactory.getLogger(UserController.class);
 
     private final UserRepository userRepo;
     private final RoleRepository roleRepo;
@@ -38,6 +44,7 @@ public class UserController {
     private final VerificationTokenRepository verificationTokenRepo;
     private final EmailService emailService;
 
+    @Transactional
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody SignupRequest signupRequest) {
 
@@ -94,7 +101,7 @@ public class UserController {
 
         User savedUser = userRepo.save(user);
 
-        // email verification (unchanged)
+        // Create verification token
         verificationTokenRepo.deleteByUser(savedUser);
 
         VerificationToken vt = new VerificationToken();
@@ -103,12 +110,17 @@ public class UserController {
         vt.setExpiresAt(Instant.now().plus(Duration.ofHours(24)));
         verificationTokenRepo.save(vt);
 
+        // Send verification email — wrapped in try-catch so that a mail failure
+        // does not prevent registration.  The user can resend verification later.
         String verifyLink = "http://localhost:5173/verify-email?token=" + vt.getToken();
-
-        emailService.send(
-                savedUser.getEmail(),
-                "Verify your AgriVerse account",
-                "Click this link to verify your email:\n" + verifyLink + "\n\nThis link expires in 24 hours.");
+        try {
+            emailService.send(
+                    savedUser.getEmail(),
+                    "Verify your AgriVerse account",
+                    "Click this link to verify your email:\n" + verifyLink + "\n\nThis link expires in 24 hours.");
+        } catch (Exception e) {
+            log.warn("Failed to send verification email to {}: {}", savedUser.getEmail(), e.getMessage());
+        }
 
         return ResponseEntity.ok(Map.of(
                 "message", "Registration successful. Please verify your email before logging in.",
@@ -170,6 +182,7 @@ public class UserController {
         return ResponseEntity.ok("Email verified successfully. You can now log in.");
     }
 
+    @Transactional
     @PostMapping("/resend-verification")
     public ResponseEntity<?> resendVerification(@RequestBody ResendVerificationRequest req) {
 
@@ -195,10 +208,15 @@ public class UserController {
 
         String verifyLink = "http://localhost:5173/verify-email?token=" + vt.getToken();
 
-        emailService.send(
-                user.getEmail(),
-                "Verify your AgriVerse account (new link)",
-                "Here is your new verification link:\n" + verifyLink + "\n\nThis link expires in 24 hours.");
+        try {
+            emailService.send(
+                    user.getEmail(),
+                    "Verify your AgriVerse account (new link)",
+                    "Here is your new verification link:\n" + verifyLink + "\n\nThis link expires in 24 hours.");
+        } catch (Exception e) {
+            log.warn("Failed to send verification email to {}: {}", user.getEmail(), e.getMessage());
+            return ResponseEntity.status(500).body("Failed to send verification email. Please try again later.");
+        }
 
         return ResponseEntity.ok("Verification email resent. Please check your inbox.");
     }

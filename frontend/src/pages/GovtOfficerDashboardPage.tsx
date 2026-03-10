@@ -151,20 +151,9 @@ export default function GovtOfficerDashboardPage() {
                           <ChevronRight className="h-5 w-5 text-muted-foreground/40 group-hover:text-primary transition-colors shrink-0 mt-1" />
                         </div>
                         <div className="flex flex-wrap items-center gap-3 mt-3 text-xs text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <User className="h-3 w-3" /> {issue.farmerUsername}
-                          </span>
                           {issue.locationText && (
                             <span className="flex items-center gap-1">
                               <MapPin className="h-3 w-3" /> {issue.locationText}
-                            </span>
-                          )}
-                          <span className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" /> {new Date(issue.createdAt).toLocaleDateString()}
-                          </span>
-                          {issue.linkedChatId && (
-                            <span className="flex items-center gap-1 text-green-600">
-                              <MessageSquare className="h-3 w-3" /> In Chat
                             </span>
                           )}
                         </div>
